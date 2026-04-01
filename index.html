@@ -1,0 +1,3044 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sistema de Follow-ups</title>
+<style>
+:root {
+  --bg: #0f172a;
+  --bg2: #1e293b;
+  --bg3: #334155;
+  --text: #f1f5f9;
+  --text2: #94a3b8;
+  --green: #22c55e;
+  --green-bg: #052e16;
+  --red: #ef4444;
+  --red-bg: #450a0a;
+  --yellow: #eab308;
+  --yellow-bg: #422006;
+  --blue: #3b82f6;
+  --blue-bg: #1e3a5f;
+  --purple: #a855f7;
+  --border: #475569;
+  --wpp: #25d366;
+  --ig: #e1306c;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+/* Header */
+.header { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 16px 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+.header h1 { font-size: 22px; font-weight: 700; }
+.header h1 span { color: var(--blue); }
+.header-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* Stats */
+.stats { display: flex; gap: 16px; padding: 16px 24px; flex-wrap: wrap; }
+.stat-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 16px 20px; flex: 1; min-width: 140px; }
+.stat-card .label { font-size: 12px; color: var(--text2); text-transform: uppercase; letter-spacing: 0.5px; }
+.stat-card .value { font-size: 28px; font-weight: 700; margin-top: 4px; }
+.stat-card.total .value { color: var(--blue); }
+.stat-card.done .value { color: var(--green); }
+.stat-card.pending .value { color: var(--yellow); }
+.stat-card.none .value { color: var(--red); }
+
+/* Controls */
+.controls { padding: 12px 24px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.search-box { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 8px 14px; color: var(--text); font-size: 14px; width: 250px; outline: none; }
+.search-box:focus { border-color: var(--blue); }
+select { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; color: var(--text); font-size: 13px; outline: none; cursor: pointer; }
+select:focus { border-color: var(--blue); }
+
+/* Buttons */
+.btn { padding: 8px 16px; border-radius: 8px; border: none; cursor: pointer; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; transition: all 0.15s; }
+.btn-primary { background: var(--blue); color: white; }
+.btn-primary:hover { background: #2563eb; }
+.btn-wpp { background: var(--wpp); color: white; }
+.btn-wpp:hover { opacity: 0.9; }
+.btn-ig { background: var(--ig); color: white; }
+.btn-ig:hover { opacity: 0.9; }
+.btn-sm { padding: 5px 10px; font-size: 12px; }
+.btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text2); }
+.btn-outline:hover { border-color: var(--text); color: var(--text); }
+.btn-success { background: var(--green); color: white; }
+.btn-danger { background: var(--red); color: white; }
+
+/* Table */
+.table-container { padding: 0 24px 24px; overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; background: var(--bg2); border-radius: 10px; overflow: hidden; }
+thead th { background: var(--bg3); padding: 10px 14px; text-align: left; font-size: 12px; text-transform: uppercase; color: var(--text2); letter-spacing: 0.5px; white-space: nowrap; position: sticky; top: 0; }
+tbody td { padding: 10px 14px; border-top: 1px solid var(--border); font-size: 13px; vertical-align: middle; }
+tbody tr:hover { background: rgba(59,130,246,0.05); }
+.badge { padding: 3px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; display: inline-block; }
+.badge-green { background: var(--green-bg); color: var(--green); border: 1px solid var(--green); }
+.badge-red { background: var(--red-bg); color: var(--red); border: 1px solid var(--red); }
+.badge-yellow { background: var(--yellow-bg); color: var(--yellow); border: 1px solid var(--yellow); }
+.badge-wpp { background: rgba(37,211,102,0.15); color: var(--wpp); border: 1px solid var(--wpp); }
+.badge-ig { background: rgba(225,48,108,0.15); color: var(--ig); border: 1px solid var(--ig); }
+.badge-dm { background: var(--blue-bg); color: var(--blue); border: 1px solid var(--blue); }
+.badge-call { background: rgba(168,85,247,0.15); color: var(--purple); border: 1px solid var(--purple); }
+
+/* Import area */
+.import-area { max-width: 700px; margin: 80px auto; text-align: center; padding: 24px; }
+.drop-zone { border: 2px dashed var(--border); border-radius: 16px; padding: 60px 40px; background: var(--bg2); cursor: pointer; transition: all 0.2s; }
+.drop-zone:hover, .drop-zone.dragover { border-color: var(--blue); background: rgba(59,130,246,0.05); }
+.drop-zone h2 { font-size: 20px; margin-bottom: 8px; }
+.drop-zone p { color: var(--text2); font-size: 14px; margin-bottom: 16px; }
+.drop-zone input[type="file"] { display: none; }
+.import-instructions { margin-top: 24px; text-align: left; background: var(--bg2); border-radius: 10px; padding: 20px; border: 1px solid var(--border); }
+.import-instructions h3 { margin-bottom: 12px; font-size: 15px; }
+.import-instructions ol { padding-left: 20px; }
+.import-instructions li { color: var(--text2); font-size: 13px; margin-bottom: 8px; line-height: 1.5; }
+.import-instructions li strong { color: var(--text); }
+
+/* Modal */
+.modal-overlay { position: fixed; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.7); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 20px; }
+.modal { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; width: 100%; max-width: 600px; max-height: 90vh; display: flex; flex-direction: column; }
+.modal-body { overflow-y: auto; flex: 1; }
+.modal-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+.modal-header h3 { font-size: 16px; }
+.modal-close { background: none; border: none; color: var(--text2); font-size: 20px; cursor: pointer; }
+.modal-body { padding: 20px; }
+.modal-footer { padding: 16px 20px; border-top: 1px solid var(--border); display: flex; gap: 8px; justify-content: flex-end; }
+.form-group { margin-bottom: 16px; }
+.form-group label { display: block; font-size: 13px; color: var(--text2); margin-bottom: 6px; }
+.form-group textarea, .form-group input, .form-group select { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; color: var(--text); font-size: 14px; outline: none; font-family: inherit; }
+.form-group textarea { min-height: 120px; resize: vertical; }
+.form-group textarea:focus, .form-group input:focus { border-color: var(--blue); }
+.template-chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+.chip { padding: 6px 12px; border-radius: 20px; font-size: 12px; cursor: pointer; border: 1px solid var(--border); background: var(--bg); color: var(--text2); transition: all 0.15s; }
+.chip:hover, .chip.active { border-color: var(--blue); color: var(--blue); background: var(--blue-bg); }
+.preview-msg { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px; font-size: 13px; color: var(--text2); line-height: 1.6; white-space: pre-wrap; margin-top: 8px; max-height: 150px; overflow-y: auto; }
+
+/* Pagination */
+.pagination { display: flex; gap: 4px; align-items: center; justify-content: center; padding: 16px 24px; flex-wrap: wrap; }
+.pagination button { background: var(--bg2); border: 1px solid var(--border); color: var(--text2); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; }
+.pagination button:hover { border-color: var(--blue); color: var(--blue); }
+.pagination button.active { background: var(--blue); border-color: var(--blue); color: white; }
+.pagination button:disabled { opacity: 0.3; cursor: not-allowed; }
+.page-info { color: var(--text2); font-size: 13px; margin: 0 8px; }
+
+/* Bulk actions */
+.bulk-bar { background: var(--blue-bg); border: 1px solid var(--blue); border-radius: 10px; margin: 0 24px 12px; padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+.bulk-bar span { font-size: 13px; color: var(--blue); font-weight: 600; }
+
+/* Hidden */
+.hidden { display: none !important; }
+
+/* Responsive */
+@media (max-width: 768px) {
+  .stats { flex-direction: column; }
+  .controls { flex-direction: column; }
+  .search-box { width: 100%; }
+  .header { flex-direction: column; text-align: center; }
+}
+
+/* Follow-up Mode */
+#followupMode { display: flex; flex-direction: column; }
+#fuCard .chip { cursor: pointer; }
+#fuCard .chip.active { border-color: var(--blue); color: var(--blue); background: var(--blue-bg); }
+
+/* Toast Notification */
+.toast {
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--green);
+  color: white;
+  padding: 12px 24px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  z-index: 9999;
+  animation: toastIn 0.3s ease, toastOut 0.3s ease 1.7s forwards;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+@keyframes toastIn { from { opacity:0; transform: translateX(-50%) translateY(20px); } to { opacity:1; transform: translateX(-50%) translateY(0); } }
+@keyframes toastOut { from { opacity:1; } to { opacity:0; } }
+
+/* Turbo mode toggle */
+.turbo-toggle { display:flex; align-items:center; gap:8px; background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:8px 14px; cursor:pointer; font-size:13px; color:var(--text2); transition: all 0.2s; }
+.turbo-toggle:has(input:checked) { border-color:var(--yellow); color:var(--yellow); background:var(--yellow-bg); }
+.turbo-toggle input { cursor:pointer; }
+
+/* Keyboard shortcuts help bar */
+.shortcuts-bar { display:flex; gap:8px; flex-wrap:wrap; justify-content:center; padding:12px 0; margin-top:12px; border-top:1px solid var(--border); }
+.shortcuts-bar .kbd { background:var(--bg3); border:1px solid var(--border); border-radius:4px; padding:2px 7px; font-size:11px; font-weight:700; color:var(--text2); font-family:monospace; }
+.shortcuts-bar .kbd-label { font-size:11px; color:var(--text2); margin-right:4px; }
+
+/* Session timer */
+.session-timer { font-size:14px; color:var(--yellow); font-weight:600; }
+
+/* Auto-advance countdown */
+.turbo-countdown { text-align:center; padding:8px; font-size:14px; font-weight:600; color:var(--yellow); animation: pulse 0.5s ease infinite alternate; }
+@keyframes pulse { from { opacity:0.6; } to { opacity:1; } }
+
+/* CRM Navigation Tabs */
+.nav-tabs { display:flex; gap:0; background:var(--bg2); border-bottom:2px solid var(--border); padding:0 24px; overflow-x:auto; }
+.nav-tab { padding:12px 20px; font-size:14px; font-weight:600; color:var(--text2); cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-2px; white-space:nowrap; transition:all 0.15s; display:flex; align-items:center; gap:6px; }
+.nav-tab:hover { color:var(--text); }
+.nav-tab.active { color:var(--blue); border-bottom-color:var(--blue); }
+.nav-tab .badge-count { background:var(--red); color:white; font-size:10px; padding:2px 6px; border-radius:10px; }
+.view-container { display:none; }
+.view-container.active { display:block; }
+
+/* Kanban Board */
+.kanban { display:flex; gap:12px; padding:16px 24px; overflow-x:auto; min-height:calc(100vh - 120px); }
+.kanban-col { min-width:240px; max-width:280px; flex:1; background:var(--bg2); border-radius:12px; display:flex; flex-direction:column; }
+.kanban-col-header { padding:12px 16px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; }
+.kanban-col-header h4 { font-size:14px; }
+.kanban-col-header .count { font-size:12px; color:var(--text2); background:var(--bg3); padding:2px 8px; border-radius:10px; }
+.kanban-col-body { padding:8px; flex:1; overflow-y:auto; min-height:100px; }
+.kanban-col.dragover { background:rgba(59,130,246,0.1); border:1px dashed var(--blue); }
+.kanban-card { background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:12px; margin-bottom:8px; cursor:grab; transition:all 0.15s; }
+.kanban-card:hover { border-color:var(--blue); transform:translateY(-1px); box-shadow:0 4px 12px rgba(0,0,0,0.2); }
+.kanban-card.dragging { opacity:0.5; }
+.kanban-card h5 { font-size:13px; margin-bottom:6px; }
+.kanban-card .meta { font-size:11px; color:var(--text2); display:flex; gap:8px; flex-wrap:wrap; }
+.kanban-card .meta span { display:flex; align-items:center; gap:3px; }
+</style>
+</head>
+<body>
+
+<!-- IMPORT SCREEN -->
+<div id="importScreen" class="import-area">
+  <!-- Tabs de importação -->
+  <div style="display:flex; gap:0; margin-bottom:20px; border-radius:10px; overflow:hidden; border:1px solid var(--border);">
+    <button class="btn" id="tabCSV" onclick="switchImportTab('csv')" style="flex:1; border-radius:0; background:var(--blue); color:white; padding:12px;">Importar CSV</button>
+    <button class="btn" id="tabIG" onclick="switchImportTab('ig')" style="flex:1; border-radius:0; background:var(--bg2); color:var(--text2); padding:12px;">Colar Links Instagram</button>
+    <button class="btn" id="tabPaste" onclick="switchImportTab('paste')" style="flex:1; border-radius:0; background:var(--bg2); color:var(--text2); padding:12px;">Colar da Planilha</button>
+  </div>
+
+  <!-- Tab CSV -->
+  <div id="importCSV">
+    <div class="drop-zone" id="dropZone">
+      <h2>Importar Planilha de Leads</h2>
+      <p>Arraste o arquivo CSV aqui ou clique para selecionar</p>
+      <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">Selecionar Arquivo CSV</button>
+      <input type="file" id="fileInput" accept=".csv,.tsv,.txt">
+    </div>
+    <div class="import-instructions">
+      <h3>Como exportar da planilha Google Sheets:</h3>
+      <ol>
+        <li>Abra sua planilha <strong>"ROTINA COMERCIAL"</strong> no Google Sheets</li>
+        <li>Clique em <strong>Arquivo > Fazer download > Valores separados por v&iacute;rgula (.csv)</strong></li>
+        <li>Isso baixa a <strong>p&aacute;gina ativa</strong>. Repita para cada p&aacute;gina (P&aacute;gina1, P&aacute;gina2)</li>
+        <li>Arraste os arquivos CSV aqui ou clique para selecionar</li>
+      </ol>
+      <p style="color: var(--text2); font-size: 12px; margin-top: 12px;">Os dados ficam salvos no seu navegador (localStorage). Nada &eacute; enviado para servidores.</p>
+    </div>
+  </div>
+
+  <!-- Tab Instagram Links -->
+  <div id="importIG" class="hidden">
+    <div style="background:var(--bg2); border:1px solid var(--border); border-radius:12px; padding:24px;">
+      <h2 style="font-size:20px; margin-bottom:8px;">Colar Links do Instagram</h2>
+      <p style="color:var(--text2); font-size:14px; margin-bottom:16px;">Cole os links do Instagram (um por linha). Aceita URLs completas ou @usernames.</p>
+      <textarea id="igLinksInput" placeholder="https://www.instagram.com/salao_beleza1/
+https://www.instagram.com/studio_hair/
+@barbearia_top
+https://instagram.com/spa_relaxe
+..." style="width:100%; min-height:300px; background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:12px; color:var(--text); font-size:14px; font-family:monospace; resize:vertical; outline:none; line-height:1.8;"></textarea>
+      <div style="display:flex; gap:12px; margin-top:16px; align-items:center; flex-wrap:wrap;">
+        <button class="btn btn-ig" onclick="importInstagramLinks()" style="padding:12px 24px; font-size:15px;">Importar Links do Instagram</button>
+        <span id="igCount" style="color:var(--text2); font-size:13px;"></span>
+      </div>
+      <div style="margin-top:16px; padding:16px; background:var(--bg); border-radius:8px; border:1px solid var(--border);">
+        <h4 style="font-size:13px; color:var(--text2); margin-bottom:8px;">Formatos aceitos:</h4>
+        <ul style="color:var(--text2); font-size:12px; padding-left:16px; line-height:2;">
+          <li><code style="color:var(--ig);">https://www.instagram.com/nome_do_perfil/</code></li>
+          <li><code style="color:var(--ig);">https://instagram.com/nome_do_perfil</code></li>
+          <li><code style="color:var(--ig);">www.instagram.com/nome_do_perfil</code></li>
+          <li><code style="color:var(--ig);">@nome_do_perfil</code></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tab Colar da Planilha -->
+  <div id="importPaste" class="hidden">
+    <div style="background:var(--bg2); border:1px solid var(--border); border-radius:12px; padding:24px;">
+      <h2 style="font-size:20px; margin-bottom:8px;">Colar Dados da Planilha</h2>
+      <p style="color:var(--text2); font-size:14px; margin-bottom:16px;">Selecione as c&eacute;lulas na planilha do Google Sheets (com cabe&ccedil;alho), copie (Ctrl+C) e cole aqui (Ctrl+V).</p>
+      <textarea id="pasteInput" placeholder="Cole aqui os dados copiados do Google Sheets...
+(Selecione incluindo a linha de cabeçalho)" style="width:100%; min-height:300px; background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:12px; color:var(--text); font-size:13px; font-family:monospace; resize:vertical; outline:none; line-height:1.6;"></textarea>
+      <div style="display:flex; gap:12px; margin-top:16px; align-items:center; flex-wrap:wrap;">
+        <button class="btn btn-primary" onclick="importPastedData()" style="padding:12px 24px; font-size:15px;">Importar Dados Colados</button>
+        <span id="pasteCount" style="color:var(--text2); font-size:13px;"></span>
+      </div>
+      <div class="import-instructions" style="margin-top:16px;">
+        <h3>Como copiar do Google Sheets:</h3>
+        <ol>
+          <li>Abra a planilha <strong>"ROTINA COMERCIAL"</strong></li>
+          <li>Selecione da c&eacute;lula <strong>A1</strong> at&eacute; a &uacute;ltima linha com dados (Ctrl+Shift+End)</li>
+          <li>Copie com <strong>Ctrl+C</strong></li>
+          <li>Cole aqui com <strong>Ctrl+V</strong></li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="mainApp" class="hidden">
+  <div class="header">
+    <h1><span>CRM</span> | Rotina Comercial</h1>
+    <div class="header-actions">
+      <button class="btn btn-primary" onclick="openFollowupMode()">🚀 Modo Follow-up</button>
+      <button class="btn btn-sm" style="background:var(--purple);color:white;padding:8px 16px;" onclick="startFirstContactMode()">🆕 1ª Prospecção</button>
+      <button class="btn btn-ig btn-sm" onclick="importMoreIG()">+ Links Instagram</button>
+      <button class="btn btn-outline" onclick="openTemplates()">Editar Templates</button>
+      <button class="btn btn-outline" onclick="exportCSV()">Exportar CSV</button>
+      <button class="btn btn-outline" onclick="importMore()">Importar Mais</button>
+      <button class="btn btn-danger btn-sm" onclick="clearData()">Limpar Dados</button>
+    </div>
+  </div>
+
+  <div class="nav-tabs" id="navTabs">
+    <div class="nav-tab active" onclick="switchView('lista')">📋 Lista</div>
+    <div class="nav-tab" onclick="switchView('kanban')">📊 Kanban</div>
+    <div class="nav-tab" onclick="switchView('dashboard')">📈 Dashboard</div>
+    <div class="nav-tab" onclick="switchView('sequencias')">🔄 Sequências <span class="badge-count hidden" id="seqBadge">0</span></div>
+    <div class="nav-tab" onclick="switchView('config')">⚙️ Config</div>
+  </div>
+
+  <div id="viewLista" class="view-container active">
+  <!-- Stats -->
+  <div class="stats">
+    <div class="stat-card total"><div class="label">Total de Leads</div><div class="value" id="statTotal">0</div></div>
+    <div class="stat-card done"><div class="label">Follow-up Completo</div><div class="value" id="statDone">0</div></div>
+    <div class="stat-card pending"><div class="label">Follow-up Parcial</div><div class="value" id="statPartial">0</div></div>
+    <div class="stat-card none"><div class="label">Sem Follow-up</div><div class="value" id="statNone">0</div></div>
+  </div>
+
+  <!-- Controls -->
+  <div class="controls">
+    <input type="text" class="search-box" id="searchBox" placeholder="Buscar lead por nome, cidade, nicho...">
+    <select id="filterCanal"><option value="">Todos os canais</option><option value="DM">DM</option><option value="WPP">WhatsApp</option><option value="LIGACAO">Liga&ccedil;&atilde;o</option></select>
+    <select id="filterNicho"><option value="">Todos os nichos</option></select>
+    <select id="filterCidade"><option value="">Todas as cidades</option></select>
+    <select id="filterStatus">
+      <option value="">Todos os status</option>
+      <option value="pendente">Sem Follow-up</option>
+      <option value="parcial">Follow-up Parcial</option>
+      <option value="completo">Follow-up Completo</option>
+    </select>
+    <select id="filterPagina"><option value="">Todas as p&aacute;ginas</option></select>
+    <button class="btn btn-outline btn-sm" onclick="clearFilters()">Limpar Filtros</button>
+    <label style="display:flex; align-items:center; gap:6px; font-size:13px; color:var(--text2); cursor:pointer;">
+      <input type="checkbox" id="selectAll"> Selecionar todos
+    </label>
+  </div>
+
+  <!-- Bulk bar -->
+  <div class="bulk-bar hidden" id="bulkBar">
+    <span id="bulkCount">0 selecionados</span>
+    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+      <button class="btn btn-wpp btn-sm" onclick="bulkAction('wpp')">WhatsApp em Massa</button>
+      <button class="btn btn-ig btn-sm" onclick="bulkAction('ig')">Abrir Instagram</button>
+      <button class="btn btn-success btn-sm" onclick="bulkMarkDone()">Marcar Follow-up</button>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th style="width:30px;"><input type="checkbox" id="headerCheck"></th>
+          <th>Empresa</th>
+          <th>Contato</th>
+          <th>Canal</th>
+          <th>Nicho</th>
+          <th>Cidade</th>
+          <th>Follow-up 1</th>
+          <th>Follow-up 2</th>
+          <th>Observa&ccedil;&otilde;es</th>
+          <th>A&ccedil;&otilde;es</th>
+        </tr>
+      </thead>
+      <tbody id="leadsTable"></tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  <div class="pagination" id="pagination"></div>
+  </div><!-- end viewLista -->
+
+  <div id="viewKanban" class="view-container"></div>
+  <div id="viewDashboard" class="view-container"></div>
+  <div id="viewSequencias" class="view-container"></div>
+  <div id="viewConfig" class="view-container"></div>
+</div>
+
+<!-- MESSAGE MODAL -->
+<div class="modal-overlay hidden" id="messageModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modalTitle">Enviar Follow-up</h3>
+      <button class="modal-close" onclick="closeModal('messageModal')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Para:</label>
+        <input type="text" id="modalTo" readonly style="background: var(--bg3);">
+      </div>
+      <div class="form-group">
+        <label>Template:</label>
+        <div class="template-chips" id="templateChips"></div>
+      </div>
+      <div class="form-group">
+        <label>Mensagem (edite se quiser):</label>
+        <textarea id="modalMessage"></textarea>
+      </div>
+      <div class="form-group">
+        <label>Pr&eacute;-visualiza&ccedil;&atilde;o:</label>
+        <div class="preview-msg" id="msgPreview"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('messageModal')">Cancelar</button>
+      <button class="btn btn-wpp" id="btnSendWpp" onclick="sendMessage('wpp')">Enviar via WhatsApp</button>
+      <button class="btn btn-ig" id="btnSendIg" onclick="sendMessage('ig')">Abrir Instagram</button>
+    </div>
+  </div>
+</div>
+
+<!-- TEMPLATES MODAL -->
+<div class="modal-overlay hidden" id="templatesModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Editar Templates de Mensagem</h3>
+      <button class="modal-close" onclick="closeModal('templatesModal')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:12px; color:var(--text2); margin-bottom:16px;">Vari&aacute;veis dispon&iacute;veis: <code style="color:var(--blue);">{empresa}</code>, <code style="color:var(--blue);">{nicho}</code>, <code style="color:var(--blue);">{cidade}</code></p>
+      <div class="form-group">
+        <label>Follow-up 1 - Primeiro contato de retorno:</label>
+        <textarea id="tpl1"></textarea>
+      </div>
+      <div class="form-group">
+        <label>Follow-up 2 - Segundo contato:</label>
+        <textarea id="tpl2"></textarea>
+      </div>
+      <div class="form-group">
+        <label>Follow-up 3 - Terceiro contato (urgência):</label>
+        <textarea id="tpl3"></textarea>
+      </div>
+      <div class="form-group">
+        <label>Follow-up 4 - Último contato (despedida):</label>
+        <textarea id="tpl4"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('templatesModal')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveTemplates()">Salvar Templates</button>
+    </div>
+  </div>
+</div>
+
+<!-- BULK WPP MODAL -->
+<div class="modal-overlay hidden" id="bulkModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Envio em Massa</h3>
+      <button class="modal-close" onclick="closeModal('bulkModal')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Template para todos:</label>
+        <div class="template-chips" id="bulkTemplateChips"></div>
+      </div>
+      <div class="form-group">
+        <label>Mensagem base:</label>
+        <textarea id="bulkMessage"></textarea>
+      </div>
+      <div id="bulkList" style="max-height: 300px; overflow-y: auto; margin-top: 12px;"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('bulkModal')">Cancelar</button>
+      <button class="btn btn-wpp" onclick="executeBulk()">Abrir Links (um por vez)</button>
+    </div>
+  </div>
+</div>
+
+<!-- FOLLOW-UP MODE -->
+<div class="modal-overlay hidden" id="followupMode" style="z-index:2000; background:var(--bg); overflow-y:auto;">
+
+  <!-- Config Panel -->
+  <div id="fuConfig" style="max-width:500px; margin:60px auto; padding:24px;">
+    <div style="text-align:center; margin-bottom:32px;">
+      <h2 style="font-size:28px;">🚀 Modo Follow-up</h2>
+      <p style="color:var(--text2); font-size:15px; margin-top:8px;">Configure sua sessão de follow-ups do dia</p>
+    </div>
+
+    <div style="background:var(--bg2); border:1px solid var(--border); border-radius:12px; padding:24px;">
+      <div class="form-group">
+        <label>Meta diária de follow-ups:</label>
+        <select id="fuGoal" style="width:100%; background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:10px 12px; color:var(--text); font-size:14px;">
+          <option value="20">20 leads</option>
+          <option value="25" selected>25 leads</option>
+          <option value="30">30 leads</option>
+          <option value="50">50 leads</option>
+          <option value="100">100 leads</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Prioridade:</label>
+        <select id="fuPriority" style="width:100%; background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:10px 12px; color:var(--text); font-size:14px;">
+          <option value="pendente">Sem Follow-up</option>
+          <option value="parcial">Follow-up Parcial</option>
+          <option value="">Todos</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Nicho:</label>
+        <select id="fuNicho" style="width:100%; background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:10px 12px; color:var(--text); font-size:14px;">
+          <option value="">Todos os nichos</option>
+        </select>
+      </div>
+
+      <button class="btn btn-primary" onclick="startFollowupSession()" style="width:100%; padding:14px; font-size:16px; margin-top:8px;">🚀 Iniciar Sessão</button>
+    </div>
+
+    <div style="text-align:center; margin-top:16px;">
+      <button class="btn btn-outline" onclick="closeFollowupMode()">Cancelar</button>
+    </div>
+  </div>
+
+  <!-- Active Follow-up -->
+  <div id="fuActive" class="hidden" style="max-width:700px; margin:20px auto; padding:24px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+      <h3 style="font-size:18px;">🚀 Modo Follow-up</h3>
+      <div style="display:flex; align-items:center; gap:16px;">
+        <span id="fuTimer" class="session-timer"></span>
+        <span id="fuCounter" style="color:var(--text2); font-size:14px;">Lead 1 de 25</span>
+        <button class="btn btn-outline btn-sm" onclick="closeFollowupMode()">✕ Sair</button>
+      </div>
+    </div>
+
+    <div style="margin-bottom:16px;">
+      <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+        <span id="fuProgressText" style="color:var(--text2); font-size:12px;">0 enviados</span>
+      </div>
+      <div style="background:var(--bg3); border-radius:8px; height:8px; overflow:hidden;">
+        <div id="fuProgressBar" style="background:var(--green); height:100%; width:0%; transition:width 0.3s; border-radius:8px;"></div>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px;">
+        <label class="turbo-toggle">
+          <input type="checkbox" id="fuTurboToggle"> ⚡ Modo Turbo (auto-avançar)
+        </label>
+        <div id="fuTurboCountdown" class="turbo-countdown hidden">Próximo em 1.5s...</div>
+      </div>
+    </div>
+
+    <div id="fuCard" style="background:var(--bg2); border:1px solid var(--border); border-radius:12px; padding:24px;"></div>
+
+    <div id="fuNav" style="display:flex; justify-content:space-between; align-items:center; margin-top:16px; padding:0 8px;"></div>
+  </div>
+</div>
+
+<script>
+// ===== STATE =====
+let leads = [];
+let filteredLeads = [];
+let selectedIds = new Set();
+let currentPage = 1;
+const PAGE_SIZE = 50;
+let currentModalLead = null;
+let bulkType = '';
+
+// ===== WHATSAPP NUMBERS =====
+const WPP_PESSOAL = '5554996859482';  // WhatsApp Pessoal - leads antigos
+const WPP_BUSINESS = '5554999501820'; // WhatsApp Business Sappium - leads novos
+
+function getLeadWppNumber(lead) {
+  // Leads antigos (Pagina1, Pagina2) → WhatsApp Pessoal
+  // Leads novos (Novos_Prospects, Instagram Import, colado) → WhatsApp Business
+  const oldPages = ['pagina1', 'pagina2', 'Pagina1', 'Pagina2'];
+  if (oldPages.includes(lead.pagina)) {
+    return WPP_PESSOAL;
+  }
+  return WPP_BUSINESS;
+}
+
+function getLeadWppLabel(lead) {
+  const oldPages = ['pagina1', 'pagina2', 'Pagina1', 'Pagina2'];
+  return oldPages.includes(lead.pagina) ? 'Pessoal' : 'Sappium';
+}
+
+function openWppWithNumber(lead, msg) {
+  const number = lead.phone || getLeadWppNumber(lead);
+  const encoded = encodeURIComponent(msg);
+  window.open(`https://wa.me/${number}?text=${encoded}`, '_blank');
+}
+
+// ===== DEFAULT TEMPLATES =====
+const DEFAULT_TEMPLATES = {
+  tpl1: `Oi! Tudo bem? Aqui é o Samuel, da Sappium. 👋
+
+Mandei uma mensagem uns dias atrás pra {empresa} sobre como posso ajudar vocês a atrair mais clientes pelo digital.
+
+Sei que a rotina é corrida! Só queria garantir que você viu. Trabalho com anúncios no Google e Instagram que colocam a {empresa} na frente de quem tá procurando exatamente o que vocês oferecem.
+
+Posso te mostrar em 2 minutos como funcionaria?`,
+  tpl2: `Oi! Aqui é o Samuel da Sappium. 👋
+
+Passando pra dar uma segunda checada com a {empresa}. Sei que a rotina é pesada!
+
+Trabalho com tráfego pago + páginas de conversão + CRM e já ajudei negócios parecidos com o de vocês a crescerem bastante no digital.
+
+Se tiver 2 minutinhos, posso te mostrar como funcionaria pra vocês. Se não for o momento, sem problemas!`,
+  tpl3: `Oi! Samuel da Sappium aqui. Última mensagem pra {empresa}. 🙏
+
+Entendo totalmente se não for o momento! Só queria deixar a porta aberta: se em algum momento quiserem explorar como atrair mais clientes pelo digital, é só me chamar.
+
+Desejo muito sucesso pra vocês! Fico à disposição.`,
+  tpl4: `Oi! Samuel da Sappium aqui. Esta é minha última mensagem para a {empresa}.
+
+Caso mude de ideia sobre escalar no digital, é só me chamar. Fico à disposição!
+
+Sucesso pro seu negócio! 🙏`,
+  tplFirst: `Oi! Tudo bem? Me chamo Samuel, sou da Sappium - agência de soluções digitais. 👋
+
+Vi o perfil da {empresa} e achei o trabalho de vocês muito bom! Trabalho ajudando negócios a atrair mais clientes pelo digital com anúncios no Google e Instagram.
+
+Posso te mostrar em 2 minutos como funcionaria pro seu negócio?`
+};
+
+// ===== FIRST CONTACT =====
+function openFirstContact(id) {
+  const lead = leads.find(l => l.id === id);
+  if (!lead) return;
+  currentModalLead = lead;
+
+  document.getElementById('modalTo').value = lead.empresa + (lead.info_contato ? ' - ' + lead.info_contato : '');
+  document.getElementById('modalTitle').textContent = `1ª Prospecção: ${lead.empresa}`;
+
+  const templates = getTemplates();
+  const chips = document.getElementById('templateChips');
+  chips.innerHTML = `<span class="chip active" id="chip_tplFirst">1ª Mensagem</span>` +
+    ['tpl1', 'tpl2', 'tpl3'].map((key, i) =>
+      `<span class="chip" onclick="selectTemplate('${key}')" id="chip_${key}">Follow-up ${i+1}</span>`
+    ).join('');
+
+  // Apply first contact template
+  const msg = applyTemplate(templates.tplFirst || DEFAULT_TEMPLATES.tplFirst, lead);
+  document.getElementById('modalMessage').value = msg;
+  updatePreview();
+
+  // 1ª prospecção SEMPRE usa WhatsApp Business Sappium
+  const btnWpp = document.getElementById('btnSendWpp');
+  btnWpp.classList.remove('hidden');
+  btnWpp.textContent = '📞 WPP Sappium';
+  btnWpp.onclick = () => {
+    markFirstContact(lead);
+    const msg = document.getElementById('modalMessage').value;
+    window.open(`https://wa.me/${WPP_BUSINESS}?text=${encodeURIComponent(msg)}`, '_blank');
+    showToast('📞 WPP Sappium aberto!');
+    closeModal('messageModal');
+  };
+  document.getElementById('btnSendIg').classList.toggle('hidden', !lead.instagram);
+  document.getElementById('btnSendIg').onclick = () => { markFirstContact(lead); sendMessage('ig'); };
+
+  document.getElementById('messageModal').classList.remove('hidden');
+}
+
+function markFirstContact(lead) {
+  if (!lead.firstContact) {
+    lead.firstContact = new Date().toLocaleDateString('pt-BR');
+    saveFollowupState(lead);
+    saveLeads();
+  }
+}
+
+// ===== CRM DATA MIGRATION =====
+function migrateLeadData() {
+  if (leads.length === 0) return;
+  if (leads[0].stage) return; // already migrated
+
+  const now = new Date().toISOString();
+  leads.forEach(lead => {
+    // Infer stage from followup status
+    if (lead.followup1 !== 'sim') {
+      lead.stage = 'novo';
+    } else if (lead.followup1 === 'sim' && lead.followup2 !== 'sim') {
+      lead.stage = 'contatado';
+    } else {
+      lead.stage = 'proposta';
+    }
+    lead.stageChangedAt = now;
+    lead.sequence = { active: false, currentStep: 0, startedAt: '', nextActionAt: '', history: [] };
+    lead.notes = [];
+    lead.dealValue = 0;
+    lead.lostReason = '';
+    lead.source = (lead.pagina || '').toLowerCase().includes('instagram') ? 'instagram' : 'csv';
+
+    // Try to parse date field (dd/mm format)
+    let createdAt = now;
+    if (lead.data) {
+      const parts = lead.data.match(/(\d{1,2})\/(\d{1,2})/);
+      if (parts) {
+        const day = parseInt(parts[1]);
+        const month = parseInt(parts[2]) - 1;
+        const year = new Date().getFullYear();
+        const parsed = new Date(year, month, day);
+        if (!isNaN(parsed.getTime())) createdAt = parsed.toISOString();
+      }
+    }
+    lead.createdAt = createdAt;
+  });
+
+  saveLeads();
+}
+
+// ===== INIT =====
+function init() {
+  const saved = localStorage.getItem('followup_leads');
+  if (saved) {
+    leads = JSON.parse(saved);
+    if (leads.length > 0) {
+      migrateLeadData();
+      // Fix: mark all leads with followup1=sim as firstContact done
+      let fixed = 0;
+      leads.forEach(l => {
+        if (l.followup1 === 'sim' && !l.firstContact) {
+          l.firstContact = l.followup1_date || l.data || 'sim';
+          fixed++;
+        }
+      });
+      if (fixed > 0) saveLeads();
+      showApp();
+      checkPendingSequences();
+      return;
+    }
+  }
+  showImport();
+}
+
+function showImport() {
+  document.getElementById('importScreen').classList.remove('hidden');
+  document.getElementById('mainApp').classList.add('hidden');
+}
+
+function showApp() {
+  document.getElementById('importScreen').classList.add('hidden');
+  document.getElementById('mainApp').classList.remove('hidden');
+  populateFilters();
+  applyFilters();
+  updateStats();
+}
+
+// ===== CSV IMPORT =====
+function parseCSV(text) {
+  const lines = [];
+  let current = '';
+  let inQuotes = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (ch === '"') {
+      if (inQuotes && text[i+1] === '"') { current += '"'; i++; }
+      else { inQuotes = !inQuotes; }
+    } else if ((ch === ',' || ch === ';' || ch === '\t') && !inQuotes) {
+      if (lines.length === 0 || lines[lines.length-1] === null) {
+        lines.push([current]);
+      } else {
+        lines[lines.length-1].push(current);
+      }
+      current = '';
+    } else if (ch === '\n' && !inQuotes) {
+      if (lines.length === 0 || lines[lines.length-1] === null) {
+        lines.push([current]);
+      } else {
+        lines[lines.length-1].push(current);
+      }
+      current = '';
+      lines.push(null); // marker for new row
+    } else if (ch === '\r' && !inQuotes) {
+      // skip
+    } else {
+      current += ch;
+    }
+  }
+  // last field
+  if (current || (lines.length > 0 && lines[lines.length-1] !== null)) {
+    if (lines.length === 0 || lines[lines.length-1] === null) {
+      lines.push([current]);
+    } else {
+      lines[lines.length-1].push(current);
+    }
+  }
+  return lines.filter(l => l !== null && l.some(c => c.trim() !== ''));
+}
+
+function processCSV(text, filename) {
+  const rows = parseCSV(text);
+  if (rows.length < 2) return 0;
+
+  const headers = rows[0].map(h => h.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''));
+  const pageName = filename.replace(/\.csv$/i, '').replace(/.*[-_]/, '');
+
+  // Map columns
+  const colMap = {};
+  const mapping = {
+    'data': 'data', 'hora': 'hora', 'nome da empresa': 'empresa', 'nome da emp': 'empresa',
+    'pessoa de contato': 'contato', 'pessoa de co': 'contato',
+    'informacoes de contato': 'info_contato', 'informacoes de conta': 'info_contato', 'informacoes': 'info_contato',
+    'abordagem': 'abordagem', 'nicho': 'nicho', 'rede': 'rede',
+    'observacoes': 'observacoes', 'resultado': 'resultado',
+    'folow-up 1': 'followup1', 'follow-up 1': 'followup1', 'followup 1': 'followup1', 'folow-up1': 'followup1',
+    'folow-up 2': 'followup2', 'follow-up 2': 'followup2', 'followup 2': 'followup2', 'folow-up2': 'followup2',
+  };
+
+  headers.forEach((h, i) => {
+    if (!h || h.trim() === '') return; // skip empty headers
+    for (const [key, val] of Object.entries(mapping)) {
+      if (h.includes(key) || (h.length > 2 && key.includes(h))) {
+        colMap[val] = i;
+      }
+    }
+    // Fallback for partial matches
+    if (h.includes('empresa') || h.includes('nome')) colMap['empresa'] = colMap['empresa'] || i;
+    if (h.includes('contato') && !h.includes('pessoa')) colMap['info_contato'] = colMap['info_contato'] || i;
+    if (h.includes('abordagem')) colMap['abordagem'] = colMap['abordagem'] || i;
+    if (h.includes('nicho')) colMap['nicho'] = colMap['nicho'] || i;
+    if (h.includes('rede')) colMap['rede'] = colMap['rede'] || i;
+    if (h.includes('observ')) colMap['observacoes'] = colMap['observacoes'] || i;
+    if (h.includes('resultado')) colMap['resultado'] = colMap['resultado'] || i;
+    if (h.includes('folow') || h.includes('follow')) {
+      if (h.includes('1')) colMap['followup1'] = colMap['followup1'] || i;
+      if (h.includes('2')) colMap['followup2'] = colMap['followup2'] || i;
+    }
+  });
+
+  let count = 0;
+  const existingIds = new Set(leads.map(l => l.id));
+
+  for (let i = 1; i < rows.length; i++) {
+    const row = rows[i];
+    const get = (key) => (colMap[key] !== undefined && row[colMap[key]]) ? row[colMap[key]].trim() : '';
+
+    const empresa = get('empresa');
+    if (!empresa && !get('info_contato')) continue; // skip empty rows
+
+    const id = `${pageName}_${i}_${empresa}`.replace(/\s+/g, '_').substring(0, 80);
+    if (existingIds.has(id)) continue;
+
+    const info = get('info_contato');
+    const abordagem = get('abordagem').toUpperCase();
+
+    // Extract phone number
+    let phone = info.replace(/[^0-9+]/g, '');
+    if (phone && !phone.startsWith('55') && !phone.startsWith('+55')) {
+      phone = '55' + phone;
+    }
+    // If info is a URL, it's not a phone
+    if (info.startsWith('http')) phone = '';
+
+    // Extract Instagram URL
+    let instagram = '';
+    if (info.includes('instagram.com')) {
+      instagram = info;
+    } else if (get('rede').toUpperCase() === 'IG' && info.startsWith('http')) {
+      instagram = info;
+    }
+
+    // Extract name from Instagram URL if empresa is empty
+    let empresaName = empresa;
+    if (!empresaName && instagram) {
+      const match = instagram.match(/instagram\.com\/([^/?]+)/);
+      if (match) empresaName = '@' + match[1];
+    }
+
+    // Detect city from observacoes or other fields
+    let cidade = '';
+    const obsLower = get('observacoes').toLowerCase();
+    const allText = (get('data') + ' ' + get('observacoes') + ' ' + get('resultado')).toLowerCase();
+    // Try common city patterns
+    ['curitiba', 'goiania', 'goiânia', 'florianopolis', 'florianópolis', 'sao paulo', 'são paulo',
+     'rio de janeiro', 'belo horizonte', 'brasilia', 'brasília', 'salvador', 'fortaleza', 'recife',
+     'porto alegre', 'manaus', 'campinas'].forEach(c => {
+      if (allText.includes(c)) cidade = c;
+    });
+
+    // For Pagina1, check column H (rede) area - sometimes city is in a nearby column
+    // Look at all remaining columns for city info
+    for (let j = 0; j < row.length; j++) {
+      if (row[j] && !colMap[j]) {
+        const val = row[j].trim().toLowerCase();
+        ['curitiba', 'goiania', 'goiânia', 'florianopolis', 'florianópolis'].forEach(c => {
+          if (val === c) cidade = val;
+        });
+      }
+    }
+
+    // Check column after rede for city (common in the spreadsheet)
+    const redeIdx = colMap['rede'];
+    if (redeIdx !== undefined) {
+      for (let j = redeIdx + 1; j < Math.min(redeIdx + 3, row.length); j++) {
+        const val = (row[j] || '').trim().toLowerCase();
+        if (['curitiba', 'goiania', 'goiânia', 'florianopolis', 'florianópolis'].includes(val)) {
+          cidade = val;
+        }
+      }
+    }
+
+    const followup1 = get('followup1').toLowerCase();
+    const followup2 = get('followup2').toLowerCase();
+
+    const f1 = followup1.includes('sim') ? 'sim' : (followup1.includes('nao') || followup1.includes('não') ? 'nao' : '');
+    const f2 = followup2.includes('sim') ? 'sim' : (followup2.includes('nao') || followup2.includes('não') ? 'nao' : '');
+
+    // Infer stage from followup status
+    let stage = 'novo';
+    if (f1 === 'sim' && f2 === 'sim') stage = 'proposta';
+    else if (f1 === 'sim') stage = 'contatado';
+
+    // Parse createdAt from data field
+    let createdAt = new Date().toISOString();
+    const dataField = get('data');
+    if (dataField) {
+      const parts = dataField.match(/(\d{1,2})\/(\d{1,2})/);
+      if (parts) {
+        const parsed = new Date(new Date().getFullYear(), parseInt(parts[2]) - 1, parseInt(parts[1]));
+        if (!isNaN(parsed.getTime())) createdAt = parsed.toISOString();
+      }
+    }
+
+    const lead = {
+      id,
+      data: get('data'),
+      empresa: empresaName || 'Sem nome',
+      contato: get('contato'),
+      info_contato: info,
+      phone,
+      instagram,
+      abordagem: abordagem || 'DM',
+      nicho: get('nicho') || 'Indefinido',
+      rede: get('rede') || '',
+      cidade: cidade || 'Indefinida',
+      observacoes: get('observacoes'),
+      resultado: get('resultado'),
+      followup1: f1,
+      followup2: f2,
+      followup3: '',
+      pagina: pageName,
+      followup1_date: '',
+      followup2_date: '',
+      followup3_date: '',
+      stage,
+      stageChangedAt: new Date().toISOString(),
+      sequence: { active: false, currentStep: 0, startedAt: '', nextActionAt: '', history: [] },
+      notes: [],
+      dealValue: 0,
+      lostReason: '',
+      source: pageName.toLowerCase().includes('instagram') ? 'instagram' : 'csv',
+      createdAt,
+    };
+
+    // Load saved follow-up state
+    const savedState = localStorage.getItem('fu_' + id);
+    if (savedState) {
+      const state = JSON.parse(savedState);
+      Object.assign(lead, state);
+    }
+
+    // If lead already has followup1 = sim, mark as first contact done
+    if (lead.followup1 === 'sim' && !lead.firstContact) {
+      lead.firstContact = lead.followup1_date || lead.data || 'sim';
+    }
+
+    leads.push(lead);
+    existingIds.add(id);
+    count++;
+  }
+
+  saveLeads();
+  return count;
+}
+
+function saveLeads() {
+  localStorage.setItem('followup_leads', JSON.stringify(leads));
+}
+
+function saveFollowupState(lead) {
+  const state = {
+    followup1: lead.followup1,
+    followup2: lead.followup2,
+    followup3: lead.followup3,
+    followup1_date: lead.followup1_date,
+    followup2_date: lead.followup2_date,
+    followup3_date: lead.followup3_date,
+    firstContact: lead.firstContact || '',
+  };
+  localStorage.setItem('fu_' + lead.id, JSON.stringify(state));
+}
+
+// ===== IMPORT TABS =====
+function switchImportTab(tab) {
+  document.getElementById('importCSV').classList.toggle('hidden', tab !== 'csv');
+  document.getElementById('importIG').classList.toggle('hidden', tab !== 'ig');
+  document.getElementById('importPaste').classList.toggle('hidden', tab !== 'paste');
+
+  document.getElementById('tabCSV').style.background = tab === 'csv' ? 'var(--blue)' : 'var(--bg2)';
+  document.getElementById('tabCSV').style.color = tab === 'csv' ? 'white' : 'var(--text2)';
+  document.getElementById('tabIG').style.background = tab === 'ig' ? 'var(--ig)' : 'var(--bg2)';
+  document.getElementById('tabIG').style.color = tab === 'ig' ? 'white' : 'var(--text2)';
+  document.getElementById('tabPaste').style.background = tab === 'paste' ? 'var(--blue)' : 'var(--bg2)';
+  document.getElementById('tabPaste').style.color = tab === 'paste' ? 'white' : 'var(--text2)';
+}
+
+// ===== INSTAGRAM LINKS IMPORT =====
+function parseInstagramLinks(text) {
+  const lines = text.split(/[\n\r]+/).map(l => l.trim()).filter(l => l.length > 0);
+  const results = [];
+
+  lines.forEach(line => {
+    // Remove trailing slashes and whitespace
+    line = line.replace(/\/+$/, '').trim();
+
+    let username = '';
+    let url = '';
+
+    if (line.startsWith('@')) {
+      username = line.substring(1).replace(/[^a-zA-Z0-9._]/g, '');
+      url = 'https://www.instagram.com/' + username + '/';
+    } else if (line.includes('instagram.com')) {
+      // Normalize URL
+      let cleanUrl = line;
+      if (!cleanUrl.startsWith('http')) cleanUrl = 'https://' + cleanUrl;
+      url = cleanUrl;
+      const match = url.match(/instagram\.com\/([a-zA-Z0-9._]+)/);
+      if (match) username = match[1];
+    } else if (/^[a-zA-Z0-9._]+$/.test(line)) {
+      // Just a username without @
+      username = line;
+      url = 'https://www.instagram.com/' + username + '/';
+    }
+
+    if (username && username !== 'p' && username !== 'reel' && username !== 'stories') {
+      results.push({ username, url });
+    }
+  });
+
+  return results;
+}
+
+function importInstagramLinks() {
+  const text = document.getElementById('igLinksInput').value;
+  const links = parseInstagramLinks(text);
+
+  if (links.length === 0) {
+    alert('Nenhum link v\u00e1lido do Instagram encontrado. Verifique o formato.');
+    return;
+  }
+
+  const existingIGs = new Set(leads.map(l => l.instagram?.toLowerCase()).filter(Boolean));
+  const existingUsernames = new Set(leads.map(l => {
+    if (!l.instagram) return '';
+    const m = l.instagram.match(/instagram\.com\/([a-zA-Z0-9._]+)/);
+    return m ? m[1].toLowerCase() : '';
+  }).filter(Boolean));
+
+  let added = 0;
+  let skipped = 0;
+
+  links.forEach(({ username, url }) => {
+    if (existingUsernames.has(username.toLowerCase())) {
+      skipped++;
+      return;
+    }
+
+    const id = 'ig_import_' + username.toLowerCase();
+    if (leads.find(l => l.id === id)) {
+      skipped++;
+      return;
+    }
+
+    leads.push({
+      id,
+      data: new Date().toLocaleDateString('pt-BR'),
+      empresa: '@' + username,
+      contato: '',
+      info_contato: url,
+      phone: '',
+      instagram: url,
+      abordagem: 'DM',
+      nicho: 'Indefinido',
+      rede: 'instagram',
+      cidade: 'Indefinida',
+      observacoes: 'Importado via links Instagram',
+      resultado: '',
+      followup1: '',
+      followup2: '',
+      followup3: '',
+      pagina: 'Instagram Import',
+      followup1_date: '',
+      followup2_date: '',
+      followup3_date: '',
+      stage: 'novo',
+      stageChangedAt: new Date().toISOString(),
+      sequence: { active: false, currentStep: 0, startedAt: '', nextActionAt: '', history: [] },
+      notes: [],
+      dealValue: 0,
+      lostReason: '',
+      source: 'instagram',
+      createdAt: new Date().toISOString(),
+    });
+
+    existingUsernames.add(username.toLowerCase());
+    added++;
+  });
+
+  if (added > 0) {
+    saveLeads();
+    showApp();
+    alert(`${added} leads importados do Instagram!${skipped > 0 ? ` (${skipped} duplicados ignorados)` : ''}`);
+  } else {
+    alert(`Nenhum lead novo. ${skipped} j\u00e1 existiam no sistema.`);
+  }
+}
+
+// Update IG count as user types
+document.getElementById('igLinksInput').addEventListener('input', function() {
+  const links = parseInstagramLinks(this.value);
+  document.getElementById('igCount').textContent = links.length > 0 ? `${links.length} links detectados` : '';
+});
+
+// ===== PASTE FROM SPREADSHEET =====
+function importPastedData() {
+  const text = document.getElementById('pasteInput').value;
+  if (!text.trim()) {
+    alert('Cole os dados da planilha primeiro.');
+    return;
+  }
+
+  // Google Sheets copies as tab-separated
+  const count = processCSV(text.replace(/\t/g, ','), 'colado');
+  if (count > 0) {
+    showApp();
+    alert(`${count} leads importados com sucesso!`);
+  } else {
+    // Try tab-separated directly
+    const count2 = processTSV(text);
+    if (count2 > 0) {
+      showApp();
+      alert(`${count2} leads importados com sucesso!`);
+    } else {
+      alert('Nenhum lead encontrado. Verifique se copiou incluindo o cabe\u00e7alho.');
+    }
+  }
+}
+
+function processTSV(text) {
+  // Split into rows by newline, columns by tab
+  const rows = text.split(/\r?\n/).map(line => line.split('\t'));
+  if (rows.length < 2) return 0;
+
+  // Build CSV-like text with commas
+  const csvText = rows.map(row =>
+    row.map(cell => '"' + cell.replace(/"/g, '""') + '"').join(',')
+  ).join('\n');
+
+  return processCSV(csvText, 'colado');
+}
+
+// ===== FILE HANDLING =====
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+
+dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+dropZone.addEventListener('dragleave', () => { dropZone.classList.remove('dragover'); });
+dropZone.addEventListener('drop', (e) => {
+  e.preventDefault();
+  dropZone.classList.remove('dragover');
+  handleFiles(e.dataTransfer.files);
+});
+fileInput.addEventListener('change', (e) => { handleFiles(e.target.files); });
+
+function handleFiles(files) {
+  let totalImported = 0;
+  let processed = 0;
+  Array.from(files).forEach(file => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const count = processCSV(e.target.result, file.name);
+      totalImported += count;
+      processed++;
+      if (processed === files.length) {
+        if (totalImported > 0) {
+          showApp();
+          alert(`${totalImported} leads importados com sucesso!`);
+        } else {
+          alert('Nenhum lead novo encontrado no arquivo. Verifique se o formato está correto.');
+        }
+      }
+    };
+    reader.readAsText(file, 'UTF-8');
+  });
+}
+
+// ===== FILTERS =====
+function populateFilters() {
+  const nichos = [...new Set(leads.map(l => l.nicho).filter(n => n && n !== 'Indefinido'))].sort();
+  const cidades = [...new Set(leads.map(l => l.cidade).filter(c => c && c !== 'Indefinida'))].sort();
+  const paginas = [...new Set(leads.map(l => l.pagina).filter(p => p))].sort();
+
+  const nichoSelect = document.getElementById('filterNicho');
+  nichoSelect.innerHTML = '<option value="">Todos os nichos</option>';
+  nichos.forEach(n => { nichoSelect.innerHTML += `<option value="${n}">${n}</option>`; });
+
+  const cidadeSelect = document.getElementById('filterCidade');
+  cidadeSelect.innerHTML = '<option value="">Todas as cidades</option>';
+  cidades.forEach(c => { cidadeSelect.innerHTML += `<option value="${c}">${c}</option>`; });
+
+  const paginaSelect = document.getElementById('filterPagina');
+  paginaSelect.innerHTML = '<option value="">Todas as páginas</option>';
+  paginas.forEach(p => { paginaSelect.innerHTML += `<option value="${p}">${p}</option>`; });
+}
+
+function getLeadStatus(lead) {
+  const f1 = lead.followup1 === 'sim';
+  const f2 = lead.followup2 === 'sim';
+  if (f1 && f2) return 'completo';
+  if (f1 || f2) return 'parcial';
+  return 'pendente';
+}
+
+function applyFilters() {
+  const search = document.getElementById('searchBox').value.toLowerCase();
+  const canal = document.getElementById('filterCanal').value;
+  const nicho = document.getElementById('filterNicho').value;
+  const cidade = document.getElementById('filterCidade').value;
+  const status = document.getElementById('filterStatus').value;
+  const pagina = document.getElementById('filterPagina').value;
+
+  filteredLeads = leads.filter(l => {
+    if (search && !(l.empresa + ' ' + l.nicho + ' ' + l.cidade + ' ' + l.info_contato + ' ' + l.observacoes).toLowerCase().includes(search)) return false;
+    if (canal) {
+      const ab = l.abordagem.toUpperCase();
+      if (canal === 'DM' && ab !== 'DM') return false;
+      if (canal === 'WPP' && ab !== 'WPP') return false;
+      if (canal === 'LIGACAO' && ab !== 'LIGAÇÃO' && ab !== 'LIGACAO') return false;
+    }
+    if (nicho && l.nicho !== nicho) return false;
+    if (cidade && l.cidade !== cidade) return false;
+    if (pagina && l.pagina !== pagina) return false;
+    if (status && getLeadStatus(l) !== status) return false;
+    return true;
+  });
+
+  currentPage = 1;
+  renderTable();
+  updateStats();
+}
+
+function clearFilters() {
+  document.getElementById('searchBox').value = '';
+  document.getElementById('filterCanal').value = '';
+  document.getElementById('filterNicho').value = '';
+  document.getElementById('filterCidade').value = '';
+  document.getElementById('filterStatus').value = '';
+  document.getElementById('filterPagina').value = '';
+  applyFilters();
+}
+
+// Event listeners for filters
+['searchBox'].forEach(id => {
+  document.getElementById(id).addEventListener('input', debounce(applyFilters, 300));
+});
+['filterCanal', 'filterNicho', 'filterCidade', 'filterStatus', 'filterPagina'].forEach(id => {
+  document.getElementById(id).addEventListener('change', applyFilters);
+});
+
+function debounce(fn, delay) {
+  let timer;
+  return function() { clearTimeout(timer); timer = setTimeout(fn, delay); };
+}
+
+// ===== RENDER TABLE =====
+function renderTable() {
+  const tbody = document.getElementById('leadsTable');
+  const start = (currentPage - 1) * PAGE_SIZE;
+  const pageLeads = filteredLeads.slice(start, start + PAGE_SIZE);
+
+  tbody.innerHTML = pageLeads.map(lead => {
+    const status = getLeadStatus(lead);
+    const checked = selectedIds.has(lead.id) ? 'checked' : '';
+    const canalBadge = lead.abordagem === 'WPP' ? 'badge-wpp' :
+                       lead.abordagem === 'DM' ? 'badge-dm' :
+                       lead.abordagem.includes('LIGA') ? 'badge-call' : 'badge-dm';
+    const f1Badge = lead.followup1 === 'sim' ? 'badge-green' : lead.followup1 === 'nao' ? 'badge-red' : 'badge-yellow';
+    const f2Badge = lead.followup2 === 'sim' ? 'badge-green' : lead.followup2 === 'nao' ? 'badge-red' : 'badge-yellow';
+    const f1Text = lead.followup1 === 'sim' ? 'Feito' : lead.followup1 === 'nao' ? 'Não' : 'Pendente';
+    const f2Text = lead.followup2 === 'sim' ? 'Feito' : lead.followup2 === 'nao' ? 'Não' : 'Pendente';
+
+    return `<tr>
+      <td><input type="checkbox" ${checked} onchange="toggleSelect('${lead.id}')"></td>
+      <td><strong>${esc(lead.empresa)}</strong><br><small style="color:var(--text2)">${esc(lead.pagina)}</small></td>
+      <td style="max-width:180px; overflow:hidden; text-overflow:ellipsis;">
+        ${lead.phone ? '<small>' + esc(lead.info_contato) + '</small>' : '<small>' + esc(lead.info_contato.substring(0,40)) + '</small>'}
+      </td>
+      <td><span class="badge ${canalBadge}">${esc(lead.abordagem)}</span></td>
+      <td><small>${esc(lead.nicho)}</small></td>
+      <td><small>${esc(lead.cidade)}</small></td>
+      <td>
+        <span class="badge ${f1Badge}">${f1Text}</span>
+        ${lead.followup1_date ? '<br><small style="color:var(--text2)">' + lead.followup1_date + '</small>' : ''}
+      </td>
+      <td>
+        <span class="badge ${f2Badge}">${f2Text}</span>
+        ${lead.followup2_date ? '<br><small style="color:var(--text2)">' + lead.followup2_date + '</small>' : ''}
+      </td>
+      <td style="max-width:150px; overflow:hidden; text-overflow:ellipsis;"><small>${esc(lead.observacoes || lead.resultado || '-')}</small></td>
+      <td style="white-space:nowrap;">
+        ${!lead.firstContact && lead.followup1 !== 'sim' ? `<button class="btn btn-sm" style="background:var(--purple);color:white;" onclick="openFirstContact('${lead.id}')" title="Primeira prospecção - nunca contatado">1ª Msg</button>` : ''}
+        <button class="btn btn-wpp btn-sm" onclick="openMessage('${lead.id}','wpp')" title="WhatsApp ${getLeadWppLabel(lead)}">📞 ${getLeadWppLabel(lead)}</button>
+        <button class="btn btn-ig btn-sm" onclick="openMessage('${lead.id}','ig')" title="Instagram" ${!lead.instagram ? 'disabled style="opacity:0.3"' : ''}>IG</button>
+        <button class="btn btn-sm ${lead.followup1 !== 'sim' ? 'btn-success' : 'btn-outline'}" onclick="toggleFollowup('${lead.id}', 1)" title="Toggle Follow-up 1">F1</button>
+        <button class="btn btn-sm ${lead.followup2 !== 'sim' ? 'btn-success' : 'btn-outline'}" onclick="toggleFollowup('${lead.id}', 2)" title="Toggle Follow-up 2">F2</button>
+      </td>
+    </tr>`;
+  }).join('');
+
+  renderPagination();
+  updateBulkBar();
+}
+
+function esc(str) {
+  if (!str) return '';
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ===== PAGINATION =====
+function renderPagination() {
+  const total = filteredLeads.length;
+  const totalPages = Math.ceil(total / PAGE_SIZE);
+  const pag = document.getElementById('pagination');
+
+  if (totalPages <= 1) { pag.innerHTML = ''; return; }
+
+  let html = `<button ${currentPage === 1 ? 'disabled' : ''} onclick="goPage(${currentPage - 1})">Anterior</button>`;
+  html += `<span class="page-info">${currentPage} de ${totalPages} (${total} leads)</span>`;
+  html += `<button ${currentPage === totalPages ? 'disabled' : ''} onclick="goPage(${currentPage + 1})">Pr&oacute;ximo</button>`;
+  pag.innerHTML = html;
+}
+
+function goPage(p) { currentPage = p; renderTable(); window.scrollTo(0, 0); }
+
+// ===== STATS =====
+function updateStats() {
+  const total = filteredLeads.length;
+  let done = 0, partial = 0, none = 0;
+  filteredLeads.forEach(l => {
+    const s = getLeadStatus(l);
+    if (s === 'completo') done++;
+    else if (s === 'parcial') partial++;
+    else none++;
+  });
+  document.getElementById('statTotal').textContent = total;
+  document.getElementById('statDone').textContent = done;
+  document.getElementById('statPartial').textContent = partial;
+  document.getElementById('statNone').textContent = none;
+}
+
+// ===== SELECTION =====
+function toggleSelect(id) {
+  if (selectedIds.has(id)) selectedIds.delete(id);
+  else selectedIds.add(id);
+  updateBulkBar();
+}
+
+document.getElementById('headerCheck').addEventListener('change', function() {
+  const start = (currentPage - 1) * PAGE_SIZE;
+  const pageLeads = filteredLeads.slice(start, start + PAGE_SIZE);
+  if (this.checked) {
+    pageLeads.forEach(l => selectedIds.add(l.id));
+  } else {
+    pageLeads.forEach(l => selectedIds.delete(l.id));
+  }
+  renderTable();
+});
+
+document.getElementById('selectAll').addEventListener('change', function() {
+  if (this.checked) {
+    filteredLeads.forEach(l => selectedIds.add(l.id));
+  } else {
+    selectedIds.clear();
+  }
+  renderTable();
+});
+
+function updateBulkBar() {
+  const bar = document.getElementById('bulkBar');
+  if (selectedIds.size > 0) {
+    bar.classList.remove('hidden');
+    document.getElementById('bulkCount').textContent = `${selectedIds.size} selecionados`;
+  } else {
+    bar.classList.add('hidden');
+  }
+}
+
+// ===== FOLLOW-UP TOGGLE =====
+function toggleFollowup(id, num) {
+  const lead = leads.find(l => l.id === id);
+  if (!lead) return;
+  const key = 'followup' + num;
+  const dateKey = key + '_date';
+  if (lead[key] === 'sim') {
+    lead[key] = '';
+    lead[dateKey] = '';
+  } else {
+    lead[key] = 'sim';
+    lead[dateKey] = new Date().toLocaleDateString('pt-BR');
+  }
+  saveFollowupState(lead);
+  saveLeads();
+  renderTable();
+  updateStats();
+}
+
+// ===== MESSAGES =====
+function getTemplates() {
+  const saved = localStorage.getItem('followup_templates');
+  return saved ? { ...DEFAULT_TEMPLATES, ...JSON.parse(saved) } : { ...DEFAULT_TEMPLATES };
+}
+
+function applyTemplate(template, lead) {
+  return template
+    .replace(/\{empresa\}/g, lead.empresa || '')
+    .replace(/\{nicho\}/g, lead.nicho || '')
+    .replace(/\{cidade\}/g, lead.cidade || '');
+}
+
+function openMessage(id, type) {
+  const lead = leads.find(l => l.id === id);
+  if (!lead) return;
+  currentModalLead = lead;
+
+  document.getElementById('modalTo').value = lead.empresa + (lead.info_contato ? ' - ' + lead.info_contato : '');
+  document.getElementById('modalTitle').textContent = `Follow-up: ${lead.empresa}`;
+
+  const templates = getTemplates();
+  const chips = document.getElementById('templateChips');
+  chips.innerHTML = ['tpl1', 'tpl2', 'tpl3'].map((key, i) =>
+    `<span class="chip" onclick="selectTemplate('${key}')" id="chip_${key}">Follow-up ${i+1}</span>`
+  ).join('');
+
+  // Auto-select based on current status
+  let autoTpl = 'tpl1';
+  if (lead.followup1 === 'sim' && lead.followup2 !== 'sim') autoTpl = 'tpl2';
+  else if (lead.followup1 === 'sim' && lead.followup2 === 'sim') autoTpl = 'tpl3';
+  selectTemplate(autoTpl);
+
+  const btnWpp = document.getElementById('btnSendWpp');
+  btnWpp.classList.remove('hidden');
+  btnWpp.textContent = `📞 WPP ${getLeadWppLabel(lead)}`;
+  document.getElementById('btnSendIg').classList.toggle('hidden', !lead.instagram);
+
+  document.getElementById('messageModal').classList.remove('hidden');
+}
+
+function selectTemplate(key) {
+  const templates = getTemplates();
+  document.querySelectorAll('#templateChips .chip').forEach(c => c.classList.remove('active'));
+  const el = document.getElementById('chip_' + key);
+  if (el) el.classList.add('active');
+
+  const msg = applyTemplate(templates[key], currentModalLead);
+  document.getElementById('modalMessage').value = msg;
+  updatePreview();
+}
+
+function updatePreview() {
+  document.getElementById('msgPreview').textContent = document.getElementById('modalMessage').value;
+}
+
+document.getElementById('modalMessage').addEventListener('input', updatePreview);
+
+function sendMessage(type) {
+  const msg = document.getElementById('modalMessage').value;
+  if (type === 'wpp') {
+    const number = currentModalLead.phone || getLeadWppNumber(currentModalLead);
+    const encoded = encodeURIComponent(msg);
+    window.open(`https://wa.me/${number}?text=${encoded}`, '_blank');
+    showToast(`📞 Aberto no WPP ${getLeadWppLabel(currentModalLead)}`);
+  } else if (type === 'ig' && currentModalLead.instagram) {
+    navigator.clipboard.writeText(msg).then(() => {
+      showToast('\ud83d\udccb Copiado! Cole na DM', 'var(--ig)');
+    });
+    window.open(currentModalLead.instagram, '_blank');
+  }
+  closeModal('messageModal');
+}
+
+// ===== TEMPLATES EDITOR =====
+function openTemplates() {
+  const templates = getTemplates();
+  document.getElementById('tpl1').value = templates.tpl1;
+  document.getElementById('tpl2').value = templates.tpl2;
+  document.getElementById('tpl3').value = templates.tpl3;
+  document.getElementById('tpl4').value = templates.tpl4 || DEFAULT_TEMPLATES.tpl4;
+  document.getElementById('templatesModal').classList.remove('hidden');
+}
+
+function saveTemplates() {
+  const templates = {
+    tpl1: document.getElementById('tpl1').value,
+    tpl2: document.getElementById('tpl2').value,
+    tpl3: document.getElementById('tpl3').value,
+    tpl4: document.getElementById('tpl4').value,
+  };
+  localStorage.setItem('followup_templates', JSON.stringify(templates));
+  closeModal('templatesModal');
+  alert('Templates salvos com sucesso!');
+}
+
+// ===== BULK ACTIONS =====
+function bulkAction(type) {
+  bulkType = type;
+  const selected = leads.filter(l => selectedIds.has(l.id));
+  const valid = type === 'wpp' ? selected.filter(l => l.phone) : selected.filter(l => l.instagram);
+
+  if (valid.length === 0) {
+    alert(`Nenhum lead selecionado tem ${type === 'wpp' ? 'número de WhatsApp' : 'perfil do Instagram'}.`);
+    return;
+  }
+
+  const templates = getTemplates();
+  const chips = document.getElementById('bulkTemplateChips');
+  chips.innerHTML = ['tpl1', 'tpl2', 'tpl3'].map((key, i) =>
+    `<span class="chip" onclick="selectBulkTemplate('${key}')" id="bulk_chip_${key}">Follow-up ${i+1}</span>`
+  ).join('');
+  selectBulkTemplate('tpl1');
+
+  const list = document.getElementById('bulkList');
+  list.innerHTML = `<p style="color:var(--text2); font-size:13px; margin-bottom:8px;">${valid.length} leads com ${type === 'wpp' ? 'WhatsApp' : 'Instagram'}:</p>` +
+    valid.slice(0, 20).map(l => `<div style="padding:4px 0; font-size:13px; border-bottom:1px solid var(--border);">${esc(l.empresa)} - ${esc(l.info_contato)}</div>`).join('') +
+    (valid.length > 20 ? `<div style="padding:8px 0; color:var(--text2); font-size:12px;">...e mais ${valid.length - 20}</div>` : '');
+
+  document.getElementById('bulkModal').classList.remove('hidden');
+}
+
+function selectBulkTemplate(key) {
+  const templates = getTemplates();
+  document.querySelectorAll('#bulkTemplateChips .chip').forEach(c => c.classList.remove('active'));
+  document.getElementById('bulk_chip_' + key).classList.add('active');
+  document.getElementById('bulkMessage').value = templates[key];
+}
+
+function executeBulk() {
+  const selected = leads.filter(l => selectedIds.has(l.id));
+  const msgTemplate = document.getElementById('bulkMessage').value;
+  const valid = bulkType === 'wpp' ? selected.filter(l => l.phone) : selected.filter(l => l.instagram);
+
+  closeModal('bulkModal');
+
+  let index = 0;
+  function openNext() {
+    if (index >= valid.length) {
+      alert(`Todos os ${valid.length} links foram abertos!`);
+      return;
+    }
+    const lead = valid[index];
+    const msg = applyTemplate(msgTemplate, lead);
+
+    if (bulkType === 'wpp') {
+      window.open(`https://wa.me/${lead.phone}?text=${encodeURIComponent(msg)}`, '_blank');
+    } else {
+      navigator.clipboard.writeText(msg);
+      window.open(lead.instagram, '_blank');
+    }
+    index++;
+    // Open next after 2 seconds to avoid popup blocker
+    if (index < valid.length) {
+      setTimeout(() => {
+        if (confirm(`Abrir próximo lead? (${index + 1}/${valid.length}): ${valid[index].empresa}`)) {
+          openNext();
+        }
+      }, 500);
+    }
+  }
+  openNext();
+}
+
+function bulkMarkDone() {
+  const nextFu = prompt('Marcar qual follow-up como feito? (1 ou 2)', '1');
+  if (nextFu !== '1' && nextFu !== '2') return;
+
+  leads.forEach(l => {
+    if (selectedIds.has(l.id)) {
+      const key = 'followup' + nextFu;
+      l[key] = 'sim';
+      l[key + '_date'] = new Date().toLocaleDateString('pt-BR');
+      saveFollowupState(l);
+    }
+  });
+  saveLeads();
+  selectedIds.clear();
+  renderTable();
+  updateStats();
+}
+
+// ===== EXPORT =====
+function exportCSV() {
+  const headers = ['Empresa','Contato','Info Contato','Canal','Nicho','Cidade','Follow-up 1','Data F1','Follow-up 2','Data F2','Observações','Página'];
+  const rows = filteredLeads.map(l => [
+    l.empresa, l.contato, l.info_contato, l.abordagem, l.nicho, l.cidade,
+    l.followup1, l.followup1_date, l.followup2, l.followup2_date,
+    l.observacoes, l.pagina
+  ]);
+
+  let csv = headers.join(',') + '\n';
+  rows.forEach(row => {
+    csv += row.map(cell => `"${(cell || '').replace(/"/g, '""')}"`).join(',') + '\n';
+  });
+
+  const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'follow-ups_' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ===== MODALS =====
+function closeModal(id) {
+  document.getElementById(id).classList.add('hidden');
+}
+
+// Close modals on overlay click
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) {
+      overlay.classList.add('hidden');
+      // If closing follow-up mode, refresh the view
+      if (overlay.id === 'followupMode') {
+        fuMode.active = false;
+        stopFuTimer();
+        if (fuTurboTimeout) { clearTimeout(fuTurboTimeout); fuTurboTimeout = null; }
+        applyFilters();
+        updateStats();
+      }
+    }
+  });
+});
+
+// ===== IMPORT MORE =====
+function importMore() {
+  document.getElementById('importScreen').classList.remove('hidden');
+  document.getElementById('mainApp').classList.add('hidden');
+  switchImportTab('csv');
+}
+
+function importMoreIG() {
+  document.getElementById('importScreen').classList.remove('hidden');
+  document.getElementById('mainApp').classList.add('hidden');
+  switchImportTab('ig');
+  document.getElementById('igLinksInput').value = '';
+  document.getElementById('igCount').textContent = '';
+}
+
+// ===== CLEAR DATA =====
+function clearData() {
+  if (!confirm('Tem certeza que quer apagar TODOS os dados? Esta ação não pode ser desfeita.')) return;
+  if (!confirm('Confirma a exclusão de todos os leads e follow-ups?')) return;
+  leads = [];
+  localStorage.removeItem('followup_leads');
+  // Clear individual follow-up states
+  Object.keys(localStorage).forEach(key => {
+    if (key.startsWith('fu_')) localStorage.removeItem(key);
+  });
+  showImport();
+}
+
+// ===== KEYBOARD SHORTCUTS =====
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    // If follow-up mode is open, close it properly
+    if (!document.getElementById('followupMode').classList.contains('hidden')) {
+      closeFollowupMode();
+      return;
+    }
+    document.querySelectorAll('.modal-overlay').forEach(m => m.classList.add('hidden'));
+  }
+});
+
+// ===== FOLLOW-UP MODE =====
+let fuMode = {
+  active: false,
+  queue: [],
+  currentIndex: 0,
+  dailyGoal: 25,
+  completed: 0,
+  skipped: 0,
+  sessionDate: ''
+};
+
+function openFollowupMode() {
+  document.getElementById('followupMode').classList.remove('hidden');
+  document.getElementById('fuConfig').classList.remove('hidden');
+  document.getElementById('fuActive').classList.add('hidden');
+
+  // Populate nicho filter
+  const nichos = [...new Set(leads.map(l => l.nicho).filter(Boolean))].sort();
+  const nichoSelect = document.getElementById('fuNicho');
+  nichoSelect.innerHTML = '<option value="">Todos os nichos</option>';
+  nichos.forEach(n => { nichoSelect.innerHTML += `<option value="${n}">${n}</option>`; });
+
+  // Update priority counts
+  const pendentes = leads.filter(l => getLeadStatus(l) === 'pendente' && (l.instagram || l.phone)).length;
+  const parciais = leads.filter(l => getLeadStatus(l) === 'parcial' && (l.instagram || l.phone)).length;
+  const fuPriority = document.getElementById('fuPriority');
+  fuPriority.innerHTML = `
+    <option value="pendente">Sem Follow-up (${pendentes} leads)</option>
+    <option value="parcial">Follow-up Parcial (${parciais} leads)</option>
+    <option value="">Todos (${pendentes + parciais} leads)</option>
+  `;
+
+  // Load today's session if exists
+  const today = new Date().toLocaleDateString('pt-BR');
+  const savedSession = localStorage.getItem('fu_session_' + today);
+  if (savedSession) {
+    const session = JSON.parse(savedSession);
+    fuMode.completed = session.completed || 0;
+    fuMode.skipped = session.skipped || 0;
+  }
+}
+
+function startFollowupSession() {
+  const priority = document.getElementById('fuPriority').value;
+  const nicho = document.getElementById('fuNicho').value;
+  fuMode.dailyGoal = parseInt(document.getElementById('fuGoal').value);
+  fuMode.sessionDate = new Date().toLocaleDateString('pt-BR');
+
+  // Build queue based on filters
+  let pool = leads.filter(l => {
+    if (!l.instagram && !l.phone) return false;
+    const status = getLeadStatus(l);
+    if (priority === 'pendente' && status !== 'pendente') return false;
+    if (priority === 'parcial' && status !== 'parcial') return false;
+    if (nicho && l.nicho !== nicho) return false;
+    return true;
+  });
+
+  // Shuffle for variety
+  pool = pool.sort(() => Math.random() - 0.5);
+
+  // Take daily goal amount
+  fuMode.queue = pool.slice(0, fuMode.dailyGoal);
+  fuMode.currentIndex = 0;
+  fuMode.active = true;
+
+  if (fuMode.queue.length === 0) {
+    alert('Nenhum lead encontrado com esses filtros!');
+    return;
+  }
+
+  document.getElementById('fuConfig').classList.add('hidden');
+  document.getElementById('fuActive').classList.remove('hidden');
+  startFuTimer();
+  renderFollowupCard();
+}
+
+function renderFollowupCard() {
+  // Remove focus from textarea so keyboard shortcuts work
+  if (document.activeElement) document.activeElement.blur();
+  if (fuMode.currentIndex >= fuMode.queue.length) {
+    showSessionComplete();
+    return;
+  }
+
+  const lead = fuMode.queue[fuMode.currentIndex];
+  const status = getLeadStatus(lead);
+  const templates = getTemplates();
+
+  // Auto-select template based on status
+  let tplKey = 'tpl1';
+  if (lead.followup1 === 'sim') tplKey = 'tpl2';
+  if (lead.followup1 === 'sim' && lead.followup2 === 'sim') tplKey = 'tpl3';
+
+  const msg = applyTemplate(templates[tplKey], lead);
+
+  // Determine primary channel
+  const isWpp = lead.abordagem && lead.abordagem.toUpperCase() === 'WPP' && lead.phone;
+  const isIG = lead.instagram;
+
+  // Extract instagram username for display
+  let displayName = lead.empresa;
+  let igUsername = '';
+  if (lead.instagram) {
+    const match = lead.instagram.match(/instagram\.com\/([^/?]+)/);
+    if (match) igUsername = '@' + match[1];
+  }
+
+  // Update progress bar
+  const progress = ((fuMode.completed + fuMode.skipped) / fuMode.dailyGoal * 100).toFixed(0);
+  document.getElementById('fuProgressBar').style.width = progress + '%';
+  document.getElementById('fuProgressText').textContent = `${fuMode.completed} enviados, ${fuMode.skipped} pulados de ${fuMode.queue.length}`;
+  document.getElementById('fuCounter').textContent = `Lead ${fuMode.currentIndex + 1} de ${fuMode.queue.length}`;
+
+  // Render card
+  const statusText = status === 'pendente' ? '🔴 Sem follow-up' : status === 'parcial' ? '🟡 Follow-up parcial (F1 feito)' : '🟢 Follow-up completo';
+  const statusColor = status === 'pendente' ? 'var(--red)' : status === 'parcial' ? 'var(--yellow)' : 'var(--green)';
+
+  document.getElementById('fuCard').innerHTML = `
+    <div style="text-align:center; margin-bottom:20px;">
+      <h2 style="font-size:24px; margin-bottom:4px;">${esc(displayName)}</h2>
+      ${igUsername && igUsername !== displayName ? `<p style="color:var(--ig); font-size:16px;">${esc(igUsername)}</p>` : ''}
+    </div>
+
+    <div style="display:flex; gap:16px; justify-content:center; margin-bottom:20px; flex-wrap:wrap;">
+      <div style="background:var(--bg); padding:8px 16px; border-radius:8px; border:1px solid var(--border);">
+        <small style="color:var(--text2);">Nicho</small><br>
+        <strong style="font-size:14px;">${esc(lead.nicho || '')}</strong>
+      </div>
+      <div style="background:var(--bg); padding:8px 16px; border-radius:8px; border:1px solid var(--border);">
+        <small style="color:var(--text2);">Canal</small><br>
+        <strong style="font-size:14px;">${esc(lead.abordagem || '')}</strong>
+      </div>
+      <div style="background:var(--bg); padding:8px 16px; border-radius:8px; border:1px solid var(--border);">
+        <small style="color:var(--text2);">Cidade</small><br>
+        <strong style="font-size:14px;">${esc(lead.cidade || '')}</strong>
+      </div>
+      <div style="background:var(--bg); padding:8px 16px; border-radius:8px; border:1px solid var(--border);">
+        <small style="color:var(--text2);">Status</small><br>
+        <strong style="font-size:14px; color:${statusColor};">${statusText}</strong>
+      </div>
+    </div>
+
+    <div style="margin-bottom:16px;">
+      <label style="font-size:13px; color:var(--text2); margin-bottom:6px; display:block;">Mensagem para enviar:</label>
+      <div style="display:flex; gap:8px; margin-bottom:8px;">
+        <span class="chip ${tplKey==='tpl1'?'active':''}" onclick="fuSelectTemplate('tpl1')">Follow-up 1</span>
+        <span class="chip ${tplKey==='tpl2'?'active':''}" onclick="fuSelectTemplate('tpl2')">Follow-up 2</span>
+        <span class="chip ${tplKey==='tpl3'?'active':''}" onclick="fuSelectTemplate('tpl3')">Follow-up 3</span>
+      </div>
+      <textarea id="fuMessage" style="width:100%; min-height:140px; background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:12px; color:var(--text); font-size:14px; font-family:inherit; resize:vertical; outline:none; line-height:1.6;">${esc(msg)}</textarea>
+    </div>
+
+    <div style="display:flex; gap:10px; justify-content:center; margin-bottom:24px; flex-wrap:wrap;">
+      <button class="btn" style="background:var(--blue); color:white; padding:10px 20px; font-size:14px;" onclick="fuCopyMessage()">📋 Copiar Mensagem</button>
+      ${isIG ? `<button class="btn btn-ig" style="padding:10px 20px; font-size:14px;" onclick="fuOpenIG()">📱 Abrir Instagram</button>` : ''}
+      <button class="btn btn-wpp" style="padding:10px 20px; font-size:14px;" onclick="fuOpenWPP()">📞 WPP ${getLeadWppLabel(lead)}</button>
+    </div>
+
+    <div style="border-top:1px solid var(--border); padding-top:20px;">
+      <p style="text-align:center; color:var(--text2); font-size:13px; margin-bottom:12px;">Qual foi o resultado?</p>
+      <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+        <button class="btn btn-success" style="padding:12px 24px; font-size:15px;" onclick="fuMarkSent()">✅ Enviado</button>
+        <button class="btn btn-outline" style="padding:12px 24px; font-size:15px;" onclick="fuSkip()">⏭️ Pular</button>
+        <button class="btn" style="background:var(--red); color:white; padding:12px 24px; font-size:15px;" onclick="fuMarkNoInterest()">❌ Sem Interesse</button>
+      </div>
+    </div>
+  `;
+
+  // Navigation
+  document.getElementById('fuNav').innerHTML = `
+    <button class="btn btn-outline" onclick="fuPrev()" ${fuMode.currentIndex === 0 ? 'disabled' : ''}>← Anterior</button>
+    <span style="color:var(--text2); font-size:14px;">${fuMode.currentIndex + 1} / ${fuMode.queue.length}</span>
+    <button class="btn btn-outline" onclick="fuNext()" ${fuMode.currentIndex >= fuMode.queue.length - 1 ? 'disabled' : ''}>Próximo →</button>
+  `;
+
+  // Keyboard shortcuts help bar (static, rendered once below nav)
+  if (!document.getElementById('fuShortcutsBar')) {
+    const bar = document.createElement('div');
+    bar.id = 'fuShortcutsBar';
+    bar.className = 'shortcuts-bar';
+    bar.innerHTML = `
+      <span><span class="kbd">C</span> <span class="kbd-label">Copiar</span></span>
+      <span><span class="kbd">I</span> <span class="kbd-label">Instagram</span></span>
+      <span><span class="kbd">W</span> <span class="kbd-label">WhatsApp</span></span>
+      <span><span class="kbd">E</span> <span class="kbd-label">Enviado</span></span>
+      <span><span class="kbd">S</span> <span class="kbd-label">Pular</span></span>
+      <span><span class="kbd">X</span> <span class="kbd-label">Sem Interesse</span></span>
+      <span><span class="kbd">←</span><span class="kbd">→</span> <span class="kbd-label">Navegar</span></span>
+    `;
+    document.getElementById('fuNav').after(bar);
+  }
+}
+
+function fuSelectTemplate(key) {
+  const templates = getTemplates();
+  const lead = fuMode.queue[fuMode.currentIndex];
+  const msg = applyTemplate(templates[key], lead);
+  document.getElementById('fuMessage').value = msg;
+  document.querySelectorAll('#fuCard .chip').forEach(c => c.classList.remove('active'));
+  event.target.classList.add('active');
+}
+
+function fuCopyMessage() {
+  const msg = document.getElementById('fuMessage').value;
+  navigator.clipboard.writeText(msg).then(() => {
+    showToast('\ud83d\udccb Mensagem copiada!', 'var(--blue)');
+  });
+}
+
+function fuOpenIG() {
+  const lead = fuMode.queue[fuMode.currentIndex];
+  const msg = document.getElementById('fuMessage').value;
+  navigator.clipboard.writeText(msg).then(() => {
+    showToast('\ud83d\udccb Copiado! Cole na DM', 'var(--ig)');
+  });
+  window.open(lead.instagram, '_blank');
+}
+
+function fuOpenWPP() {
+  const lead = fuMode.queue[fuMode.currentIndex];
+  const msg = document.getElementById('fuMessage').value;
+  const number = lead.phone || getLeadWppNumber(lead);
+  window.open(`https://wa.me/${number}?text=${encodeURIComponent(msg)}`, '_blank');
+  showToast(`📞 WPP ${getLeadWppLabel(lead)} aberto!`);
+  showToast('\ud83d\udcf1 WhatsApp aberto!', 'var(--wpp)');
+}
+
+function fuMarkSent() {
+  const lead = fuMode.queue[fuMode.currentIndex];
+  if (lead.followup1 !== 'sim') {
+    lead.followup1 = 'sim';
+    lead.followup1_date = new Date().toLocaleDateString('pt-BR');
+  } else if (lead.followup2 !== 'sim') {
+    lead.followup2 = 'sim';
+    lead.followup2_date = new Date().toLocaleDateString('pt-BR');
+  } else {
+    lead.followup3 = 'sim';
+    lead.followup3_date = new Date().toLocaleDateString('pt-BR');
+  }
+  saveFollowupState(lead);
+  saveLeads();
+  fuMode.completed++;
+  saveFuSession();
+  showToast('\u2705 Enviado! ' + lead.empresa, 'var(--green)');
+  fuMode.currentIndex++;
+  renderFollowupCard();
+  // Turbo mode: auto-advance to next lead
+  fuAutoAdvance();
+}
+
+function fuSkip() {
+  fuMode.skipped++;
+  saveFuSession();
+  showToast('\u23ed\ufe0f Pulado', 'var(--bg3)');
+  fuMode.currentIndex++;
+  renderFollowupCard();
+}
+
+function fuMarkNoInterest() {
+  const lead = fuMode.queue[fuMode.currentIndex];
+  lead.observacoes = (lead.observacoes ? lead.observacoes + ' | ' : '') + 'Sem interesse - ' + new Date().toLocaleDateString('pt-BR');
+  saveLeads();
+  fuMode.completed++;
+  saveFuSession();
+  showToast('\u274c Sem interesse: ' + lead.empresa, 'var(--red)');
+  fuMode.currentIndex++;
+  renderFollowupCard();
+}
+
+function fuPrev() {
+  if (fuMode.currentIndex > 0) {
+    fuMode.currentIndex--;
+    renderFollowupCard();
+  }
+}
+
+function fuNext() {
+  if (fuMode.currentIndex < fuMode.queue.length - 1) {
+    fuMode.currentIndex++;
+    renderFollowupCard();
+  }
+}
+
+function saveFuSession() {
+  const key = 'fu_session_' + fuMode.sessionDate;
+  localStorage.setItem(key, JSON.stringify({
+    completed: fuMode.completed,
+    skipped: fuMode.skipped,
+    date: fuMode.sessionDate
+  }));
+}
+
+function showSessionComplete() {
+  stopFuTimer();
+  const totalElapsed = getFuElapsedSeconds();
+  const totalLeads = fuMode.completed + fuMode.skipped;
+  const avgPerLead = totalLeads > 0 ? (totalElapsed / totalLeads) : 0;
+  const leadsPerMin = totalElapsed > 0 ? (totalLeads / (totalElapsed / 60)) : 0;
+  const elapsedMM = String(Math.floor(totalElapsed / 60)).padStart(2, '0');
+  const elapsedSS = String(totalElapsed % 60).padStart(2, '0');
+
+  document.getElementById('fuCard').innerHTML = `
+    <div style="text-align:center; padding:40px;">
+      <div style="font-size:60px; margin-bottom:16px;">🎉</div>
+      <h2 style="font-size:24px; margin-bottom:8px;">Sessão Concluída!</h2>
+      <p style="color:var(--text2); font-size:16px; margin-bottom:24px;">Você terminou todos os leads da fila de hoje.</p>
+      <div style="display:flex; gap:16px; justify-content:center; margin-bottom:24px; flex-wrap:wrap;">
+        <div style="background:var(--green-bg); border:1px solid var(--green); border-radius:12px; padding:16px 24px;">
+          <div style="font-size:28px; font-weight:700; color:var(--green);">${fuMode.completed}</div>
+          <div style="font-size:12px; color:var(--text2);">Enviados</div>
+        </div>
+        <div style="background:var(--yellow-bg); border:1px solid var(--yellow); border-radius:12px; padding:16px 24px;">
+          <div style="font-size:28px; font-weight:700; color:var(--yellow);">${fuMode.skipped}</div>
+          <div style="font-size:12px; color:var(--text2);">Pulados</div>
+        </div>
+        <div style="background:var(--blue-bg); border:1px solid var(--blue); border-radius:12px; padding:16px 24px;">
+          <div style="font-size:28px; font-weight:700; color:var(--blue);">${elapsedMM}:${elapsedSS}</div>
+          <div style="font-size:12px; color:var(--text2);">Tempo Total</div>
+        </div>
+      </div>
+      <div style="display:flex; gap:16px; justify-content:center; margin-bottom:24px; flex-wrap:wrap;">
+        <div style="background:var(--bg); border:1px solid var(--border); border-radius:12px; padding:12px 20px;">
+          <div style="font-size:20px; font-weight:700; color:var(--text);">${avgPerLead.toFixed(1)}s</div>
+          <div style="font-size:12px; color:var(--text2);">Média por lead</div>
+        </div>
+        <div style="background:var(--bg); border:1px solid var(--border); border-radius:12px; padding:12px 20px;">
+          <div style="font-size:20px; font-weight:700; color:var(--text);">${leadsPerMin.toFixed(1)}</div>
+          <div style="font-size:12px; color:var(--text2);">Leads/minuto</div>
+        </div>
+      </div>
+      <button class="btn btn-primary" style="padding:12px 24px; font-size:15px;" onclick="closeFollowupMode()">Voltar ao Painel</button>
+      <button class="btn btn-outline" style="padding:12px 24px; font-size:15px; margin-left:12px;" onclick="document.getElementById('fuConfig').classList.remove('hidden'); document.getElementById('fuActive').classList.add('hidden');">Nova Sessão</button>
+    </div>
+  `;
+  document.getElementById('fuNav').innerHTML = '';
+}
+
+function closeFollowupMode() {
+  document.getElementById('followupMode').classList.add('hidden');
+  fuMode.active = false;
+  stopFuTimer();
+  if (fuTurboTimeout) { clearTimeout(fuTurboTimeout); fuTurboTimeout = null; }
+  applyFilters();
+  updateStats();
+}
+
+// ===== FIRST CONTACT MODE =====
+function startFirstContactMode() {
+  window.alert = (msg) => { window._lastAlert = msg; };
+
+  // Filter leads that NEVER received any contact (no firstContact, no followup1)
+  const pool = leads.filter(l => !l.firstContact && l.followup1 !== 'sim' && l.instagram);
+
+  if (pool.length === 0) {
+    showToast('Todos os leads já receberam a 1ª mensagem!', 'var(--green)');
+    return;
+  }
+
+  // Shuffle for variety
+  const shuffled = pool.sort(() => Math.random() - 0.5);
+
+  // Setup follow-up mode with first contact leads
+  fuMode.queue = shuffled.slice(0, 50);
+  fuMode.currentIndex = 0;
+  fuMode.dailyGoal = fuMode.queue.length;
+  fuMode.completed = 0;
+  fuMode.skipped = 0;
+  fuMode.sessionDate = new Date().toLocaleDateString('pt-BR');
+  fuMode.active = true;
+  fuMode.isFirstContact = true;
+
+  // Show the follow-up mode overlay
+  document.getElementById('followupMode').classList.remove('hidden');
+  document.getElementById('fuConfig').classList.add('hidden');
+  document.getElementById('fuActive').classList.remove('hidden');
+
+  startFuTimer();
+  renderFirstContactCard();
+}
+
+function renderFirstContactCard() {
+  if (fuMode.currentIndex >= fuMode.queue.length) {
+    showSessionComplete();
+    return;
+  }
+
+  if (document.activeElement) document.activeElement.blur();
+
+  const lead = fuMode.queue[fuMode.currentIndex];
+  const templates = getTemplates();
+  const msg = applyTemplate(templates.tplFirst || DEFAULT_TEMPLATES.tplFirst, lead);
+  // 1ª prospecção SEMPRE usa Sappium Business
+  const wppLabel = 'Sappium';
+
+  let displayName = lead.empresa;
+  let igUsername = '';
+  if (lead.instagram) {
+    const match = lead.instagram.match(/instagram\.com\/([^/?]+)/);
+    if (match) igUsername = '@' + match[1];
+  }
+
+  // Update progress
+  const progress = ((fuMode.completed + fuMode.skipped) / fuMode.dailyGoal * 100).toFixed(0);
+  document.getElementById('fuProgressBar').style.width = progress + '%';
+  document.getElementById('fuProgressText').textContent = `${fuMode.completed} enviados, ${fuMode.skipped} pulados de ${fuMode.queue.length}`;
+  document.getElementById('fuCounter').textContent = `Lead ${fuMode.currentIndex + 1} de ${fuMode.queue.length}`;
+
+  document.getElementById('fuCard').innerHTML = `
+    <div style="text-align:center; margin-bottom:16px;">
+      <span style="background:var(--purple); color:white; padding:4px 12px; border-radius:20px; font-size:12px; font-weight:600;">🆕 1ª PROSPECÇÃO</span>
+    </div>
+    <div style="text-align:center; margin-bottom:20px;">
+      <h2 style="font-size:24px; margin-bottom:4px;">${esc(displayName)}</h2>
+      ${igUsername && igUsername !== displayName ? `<p style="color:var(--ig); font-size:16px;">${esc(igUsername)}</p>` : ''}
+    </div>
+    <div style="display:flex; gap:16px; justify-content:center; margin-bottom:20px; flex-wrap:wrap;">
+      <div style="background:var(--bg); padding:8px 16px; border-radius:8px; border:1px solid var(--border);">
+        <small style="color:var(--text2);">Nicho</small><br>
+        <strong style="font-size:14px;">${esc(lead.nicho)}</strong>
+      </div>
+      <div style="background:var(--bg); padding:8px 16px; border-radius:8px; border:1px solid var(--border);">
+        <small style="color:var(--text2);">Cidade</small><br>
+        <strong style="font-size:14px;">${esc(lead.cidade)}</strong>
+      </div>
+      <div style="background:var(--bg); padding:8px 16px; border-radius:8px; border:1px solid var(--border);">
+        <small style="color:var(--text2);">WhatsApp</small><br>
+        <strong style="font-size:14px; color:var(--wpp);">📞 ${wppLabel}</strong>
+      </div>
+    </div>
+    <div style="margin-bottom:16px;">
+      <label style="font-size:13px; color:var(--text2); margin-bottom:6px; display:block;">Mensagem de 1ª prospecção:</label>
+      <textarea id="fuMessage" style="width:100%; min-height:140px; background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:12px; color:var(--text); font-size:14px; font-family:inherit; resize:vertical; outline:none; line-height:1.6;">${esc(msg)}</textarea>
+    </div>
+    <div style="display:flex; gap:10px; justify-content:center; margin-bottom:24px; flex-wrap:wrap;">
+      <button class="btn" style="background:var(--blue); color:white; padding:10px 20px; font-size:14px;" onclick="fuCopyMessage()">📋 Copiar</button>
+      <button class="btn btn-ig" style="padding:10px 20px; font-size:14px;" onclick="fuFirstContactSendIG()">📱 Abrir IG + Copiar</button>
+      <button class="btn btn-wpp" style="padding:10px 20px; font-size:14px;" onclick="fuFirstContactSendWPP()">📞 WPP Sappium</button>
+    </div>
+    <div style="border-top:1px solid var(--border); padding-top:20px;">
+      <p style="text-align:center; color:var(--text2); font-size:13px; margin-bottom:12px;">Resultado:</p>
+      <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+        <button class="btn btn-success" style="padding:12px 24px; font-size:15px;" onclick="fuFirstContactSent()">✅ Enviado</button>
+        <button class="btn btn-outline" style="padding:12px 24px; font-size:15px;" onclick="fuSkipFirstContact()">⏭️ Pular</button>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('fuNav').innerHTML = `
+    <button class="btn btn-outline" onclick="fuPrevFirstContact()" ${fuMode.currentIndex === 0 ? 'disabled' : ''}>← Anterior</button>
+    <span style="color:var(--text2); font-size:14px;">${fuMode.currentIndex + 1} / ${fuMode.queue.length}</span>
+    <button class="btn btn-outline" onclick="fuNextFirstContact()" ${fuMode.currentIndex >= fuMode.queue.length - 1 ? 'disabled' : ''}>Próximo →</button>
+  `;
+}
+
+function fuFirstContactSendIG() {
+  const lead = fuMode.queue[fuMode.currentIndex];
+  const msg = document.getElementById('fuMessage').value;
+  navigator.clipboard.writeText(msg).then(() => {
+    showToast('📋 Copiado! Cole na DM', 'var(--ig)');
+  });
+  window.open(lead.instagram, '_blank');
+}
+
+function fuFirstContactSendWPP() {
+  const lead = fuMode.queue[fuMode.currentIndex];
+  const msg = document.getElementById('fuMessage').value;
+  // 1ª prospecção SEMPRE usa WhatsApp Business Sappium
+  window.open(`https://wa.me/${WPP_BUSINESS}?text=${encodeURIComponent(msg)}`, '_blank');
+  showToast('📞 WPP Sappium aberto!');
+}
+
+function fuFirstContactSent() {
+  const lead = fuMode.queue[fuMode.currentIndex];
+  lead.firstContact = new Date().toLocaleDateString('pt-BR');
+  saveFollowupState(lead);
+  saveLeads();
+  fuMode.completed++;
+  saveFuSession();
+  fuMode.currentIndex++;
+  renderFirstContactCard();
+}
+
+function fuSkipFirstContact() {
+  fuMode.skipped++;
+  saveFuSession();
+  fuMode.currentIndex++;
+  renderFirstContactCard();
+}
+
+function fuPrevFirstContact() {
+  if (fuMode.currentIndex > 0) {
+    fuMode.currentIndex--;
+    renderFirstContactCard();
+  }
+}
+
+function fuNextFirstContact() {
+  if (fuMode.currentIndex < fuMode.queue.length - 1) {
+    fuMode.currentIndex++;
+    renderFirstContactCard();
+  }
+}
+
+// ===== TOAST NOTIFICATION =====
+function showToast(msg, color) {
+  const existing = document.querySelector('.toast');
+  if (existing) existing.remove();
+  const t = document.createElement('div');
+  t.className = 'toast';
+  if (color) t.style.background = color;
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2000);
+}
+
+// ===== SESSION TIMER =====
+let fuSessionTimerInterval = null;
+let fuSessionStartTime = null;
+
+function startFuTimer() {
+  fuSessionStartTime = Date.now();
+  if (fuSessionTimerInterval) clearInterval(fuSessionTimerInterval);
+  fuSessionTimerInterval = setInterval(updateFuTimer, 1000);
+  updateFuTimer();
+}
+
+function stopFuTimer() {
+  if (fuSessionTimerInterval) { clearInterval(fuSessionTimerInterval); fuSessionTimerInterval = null; }
+}
+
+function updateFuTimer() {
+  if (!fuSessionStartTime) return;
+  const el = document.getElementById('fuTimer');
+  if (!el) return;
+  const elapsed = Math.floor((Date.now() - fuSessionStartTime) / 1000);
+  const mm = String(Math.floor(elapsed / 60)).padStart(2, '0');
+  const ss = String(elapsed % 60).padStart(2, '0');
+  el.textContent = '\u23f1\ufe0f ' + mm + ':' + ss;
+}
+
+function getFuElapsedSeconds() {
+  if (!fuSessionStartTime) return 0;
+  return Math.floor((Date.now() - fuSessionStartTime) / 1000);
+}
+
+// ===== TURBO MODE AUTO-ADVANCE =====
+let fuTurboTimeout = null;
+
+function fuAutoAdvance() {
+  if (fuTurboTimeout) { clearTimeout(fuTurboTimeout); fuTurboTimeout = null; }
+  const turboCheck = document.getElementById('fuTurboToggle');
+  if (!turboCheck || !turboCheck.checked) return;
+  if (fuMode.currentIndex >= fuMode.queue.length) return;
+
+  // Show countdown
+  const countdownEl = document.getElementById('fuTurboCountdown');
+  if (countdownEl) countdownEl.classList.remove('hidden');
+
+  fuTurboTimeout = setTimeout(() => {
+    if (countdownEl) countdownEl.classList.add('hidden');
+    if (fuMode.currentIndex >= fuMode.queue.length) return;
+    const lead = fuMode.queue[fuMode.currentIndex];
+    const ab = lead.abordagem ? lead.abordagem.toUpperCase() : '';
+    if (ab === 'WPP' && lead.phone) {
+      fuOpenWPP();
+    } else if (lead.instagram) {
+      fuOpenIG();
+    }
+  }, 1500);
+}
+
+// ===== KEYBOARD SHORTCUTS (Follow-up Mode) =====
+document.addEventListener('keydown', (e) => {
+  // Only act when follow-up mode is visible and fuActive is visible
+  const fuOverlay = document.getElementById('followupMode');
+  const fuActive = document.getElementById('fuActive');
+  if (!fuOverlay || fuOverlay.classList.contains('hidden')) return;
+  if (!fuActive || fuActive.classList.contains('hidden')) return;
+
+  const key = e.key;
+  const tag = document.activeElement.tagName.toLowerCase();
+  const inTextarea = (tag === 'textarea' || tag === 'input' || tag === 'select');
+
+  // Arrow keys and Enter always work (blur textarea first if needed)
+  if (key === 'ArrowLeft') {
+    e.preventDefault();
+    if (inTextarea) document.activeElement.blur();
+    fuPrev();
+    return;
+  } else if (key === 'ArrowRight') {
+    e.preventDefault();
+    if (inTextarea) document.activeElement.blur();
+    fuNext();
+    return;
+  }
+
+  // Action shortcuts: I, W, E, Enter, S, X, C — blur textarea and execute
+  // If user is actively typing in textarea, only respond to Escape (to blur)
+  if (inTextarea) {
+    if (key === 'Escape') {
+      e.preventDefault();
+      document.activeElement.blur();
+      return;
+    }
+    // Don't block typing in textarea
+    return;
+  }
+
+  // Shortcuts only work when NOT focused on textarea
+  if (key === 'c' || key === 'C') {
+    e.preventDefault();
+    fuCopyMessage();
+  } else if (key === 'i' || key === 'I') {
+    e.preventDefault();
+    const lead = fuMode.queue[fuMode.currentIndex];
+    if (lead && lead.instagram) fuOpenIG();
+    else showToast('Este lead não tem Instagram', 'var(--red)');
+  } else if (key === 'w' || key === 'W') {
+    e.preventDefault();
+    const lead = fuMode.queue[fuMode.currentIndex];
+    if (lead && lead.phone) fuOpenWPP();
+    else showToast('Este lead não tem WhatsApp', 'var(--red)');
+  } else if (key === 'e' || key === 'E' || key === 'Enter') {
+    e.preventDefault();
+    fuMarkSent();
+  } else if (key === 's' || key === 'S') {
+    e.preventDefault();
+    fuSkip();
+  } else if (key === 'x' || key === 'X') {
+    e.preventDefault();
+    fuMarkNoInterest();
+  }
+});
+
+// ===== CRM: VIEW NAVIGATION =====
+let currentView = 'lista';
+
+function switchView(view) {
+  currentView = view;
+  document.querySelectorAll('.view-container').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+
+  const viewEl = document.getElementById('view' + view.charAt(0).toUpperCase() + view.slice(1));
+  if (viewEl) viewEl.classList.add('active');
+
+  const tabs = document.querySelectorAll('.nav-tab');
+  const viewNames = ['lista', 'kanban', 'dashboard', 'sequencias', 'config'];
+  const idx = viewNames.indexOf(view);
+  if (idx >= 0 && tabs[idx]) tabs[idx].classList.add('active');
+
+  if (view === 'kanban') renderKanban();
+  if (view === 'dashboard') renderDashboard();
+  if (view === 'sequencias') renderSequencias();
+  if (view === 'config') renderConfig();
+}
+
+// ===== CRM: KANBAN BOARD =====
+const STAGES = [
+  { id: 'novo', label: 'Novo', color: 'var(--blue)', icon: '🆕' },
+  { id: 'contatado', label: 'Contatado', color: 'var(--yellow)', icon: '📞' },
+  { id: 'proposta', label: 'Proposta', color: 'var(--purple)', icon: '📄' },
+  { id: 'negociacao', label: 'Negociação', color: '#ec4899', icon: '🤝' },
+  { id: 'fechado', label: 'Fechado', color: 'var(--green)', icon: '✅' },
+  { id: 'perdido', label: 'Perdido', color: 'var(--red)', icon: '❌' }
+];
+
+function renderKanban() {
+  const container = document.getElementById('viewKanban');
+
+  let html = '<div style="padding:16px 24px 0;"><input type="text" class="search-box" id="kanbanSearch" placeholder="Buscar lead..." style="width:300px;" oninput="renderKanbanCards()"></div>';
+
+  html += '<div class="kanban">';
+
+  STAGES.forEach(stage => {
+    const stageLeads = leads.filter(l => l.stage === stage.id);
+    html += `
+      <div class="kanban-col" data-stage="${stage.id}"
+        ondragover="kanbanDragOver(event)" ondragleave="kanbanDragLeave(event)" ondrop="kanbanDrop(event)">
+        <div class="kanban-col-header">
+          <h4 style="color:${stage.color}">${stage.icon} ${stage.label}</h4>
+          <span class="count" id="kanbanCount_${stage.id}">${stageLeads.length}</span>
+        </div>
+        <div class="kanban-col-body" id="kanbanCol_${stage.id}"></div>
+      </div>`;
+  });
+
+  html += '</div>';
+  container.innerHTML = html;
+  renderKanbanCards();
+}
+
+function renderKanbanCards() {
+  const search = (document.getElementById('kanbanSearch')?.value || '').toLowerCase();
+
+  STAGES.forEach(stage => {
+    let stageLeads = leads.filter(l => l.stage === stage.id);
+    if (search) {
+      stageLeads = stageLeads.filter(l =>
+        (l.empresa + ' ' + l.nicho + ' ' + l.cidade).toLowerCase().includes(search)
+      );
+    }
+    stageLeads.sort((a, b) => (b.stageChangedAt || '').localeCompare(a.stageChangedAt || ''));
+
+    const visible = stageLeads.slice(0, 50);
+    const col = document.getElementById('kanbanCol_' + stage.id);
+    if (!col) return;
+
+    col.innerHTML = visible.map(lead => {
+      const canalBadge = lead.abordagem === 'WPP' ? '📱' : lead.abordagem === 'DM' ? '💬' : '📞';
+      const timeAgo = lead.stageChangedAt ? getTimeAgo(lead.stageChangedAt) : '';
+      const seqInfo = lead.sequence?.active ? '🔄 Seq. ativa' : '';
+
+      return `<div class="kanban-card" draggable="true"
+        ondragstart="kanbanDragStart(event, '${lead.id}')"
+        onclick="openLeadDetail('${lead.id}')">
+        <h5>${esc(lead.empresa)}</h5>
+        <div class="meta">
+          <span>${canalBadge} ${esc(lead.abordagem)}</span>
+          <span>${esc(lead.nicho)}</span>
+          ${timeAgo ? '<span>⏰ ' + timeAgo + '</span>' : ''}
+          ${seqInfo ? '<span>' + seqInfo + '</span>' : ''}
+          ${lead.dealValue ? '<span>💰 R$ ' + lead.dealValue.toLocaleString('pt-BR') + '</span>' : ''}
+        </div>
+      </div>`;
+    }).join('');
+
+    if (stageLeads.length > 50) {
+      col.innerHTML += `<div style="text-align:center; padding:8px; color:var(--text2); font-size:12px;">+${stageLeads.length - 50} mais</div>`;
+    }
+
+    const countEl = document.getElementById('kanbanCount_' + stage.id);
+    if (countEl) countEl.textContent = stageLeads.length;
+  });
+}
+
+function getTimeAgo(isoDate) {
+  if (!isoDate) return '';
+  const diff = Date.now() - new Date(isoDate).getTime();
+  const days = Math.floor(diff / 86400000);
+  if (days === 0) return 'hoje';
+  if (days === 1) return 'ontem';
+  if (days < 30) return days + 'd atrás';
+  return Math.floor(days / 30) + 'm atrás';
+}
+
+function kanbanDragStart(e, id) {
+  e.dataTransfer.setData('text/plain', id);
+  e.target.classList.add('dragging');
+}
+
+function kanbanDragOver(e) {
+  e.preventDefault();
+  const col = e.target.closest('.kanban-col');
+  if (col) col.classList.add('dragover');
+}
+
+function kanbanDragLeave(e) {
+  const col = e.target.closest('.kanban-col');
+  if (col) col.classList.remove('dragover');
+}
+
+function kanbanDrop(e) {
+  e.preventDefault();
+  const col = e.target.closest('.kanban-col');
+  if (!col) return;
+  col.classList.remove('dragover');
+
+  const id = e.dataTransfer.getData('text/plain');
+  const newStage = col.dataset.stage;
+  const lead = leads.find(l => l.id === id);
+  if (!lead || lead.stage === newStage) return;
+
+  const oldStage = lead.stage;
+  lead.stage = newStage;
+  lead.stageChangedAt = new Date().toISOString();
+  lead.notes = lead.notes || [];
+  lead.notes.push({
+    text: `Movido de ${oldStage} para ${newStage}`,
+    date: new Date().toISOString(),
+    type: 'stage_change'
+  });
+
+  saveLeads();
+  renderKanbanCards();
+  showToast(`${lead.empresa} → ${STAGES.find(s => s.id === newStage)?.label}`, 'var(--blue)');
+}
+
+// ===== CRM: LEAD DETAIL MODAL =====
+function openLeadDetail(id) {
+  const lead = leads.find(l => l.id === id);
+  if (!lead) return;
+
+  const stageOptions = STAGES.map(s =>
+    `<option value="${s.id}" ${lead.stage === s.id ? 'selected' : ''}>${s.icon} ${s.label}</option>`
+  ).join('');
+
+  const notesHtml = (lead.notes || []).slice().reverse().map(n => {
+    const icon = n.type === 'stage_change' ? '🔄' : n.type === 'call' ? '📞' : '📝';
+    const date = new Date(n.date).toLocaleDateString('pt-BR');
+    return `<div style="padding:8px; border-left:2px solid var(--border); margin-bottom:8px;">
+      <small style="color:var(--text2);">${icon} ${date}</small><br>${esc(n.text)}
+    </div>`;
+  }).join('') || '<p style="color:var(--text2); font-size:13px;">Nenhuma nota ainda.</p>';
+
+  const modal = document.getElementById('messageModal');
+  document.getElementById('modalTitle').textContent = lead.empresa;
+  modal.querySelector('.modal-body').innerHTML = `
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:16px;">
+      <div class="form-group">
+        <label>Estágio:</label>
+        <select id="detailStage" onchange="changeLeadStage('${lead.id}', this.value)" style="width:100%; background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:8px; color:var(--text);">${stageOptions}</select>
+      </div>
+      <div class="form-group">
+        <label>Valor do Deal (R$):</label>
+        <input type="number" id="detailDealValue" value="${lead.dealValue || 0}" onchange="updateDealValue('${lead.id}', this.value)" style="width:100%; background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:8px; color:var(--text);">
+      </div>
+    </div>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:16px;">
+      <div><small style="color:var(--text2);">Nicho:</small><br><strong>${esc(lead.nicho)}</strong></div>
+      <div><small style="color:var(--text2);">Canal:</small><br><strong>${esc(lead.abordagem)}</strong></div>
+      <div><small style="color:var(--text2);">Cidade:</small><br><strong>${esc(lead.cidade)}</strong></div>
+      <div><small style="color:var(--text2);">Contato:</small><br><strong>${esc(lead.info_contato?.substring(0,40) || '-')}</strong></div>
+    </div>
+    <div style="display:flex; gap:8px; margin-bottom:16px;">
+      <button class="btn btn-wpp btn-sm" onclick="openMessage('${lead.id}','wpp')" ${!lead.phone?'disabled style="opacity:0.3"':''}>📞 WhatsApp</button>
+      <button class="btn btn-ig btn-sm" onclick="openMessage('${lead.id}','ig')" ${!lead.instagram?'disabled style="opacity:0.3"':''}>📱 Instagram</button>
+      <button class="btn btn-sm ${lead.sequence?.active ? 'btn-danger' : 'btn-success'}" onclick="toggleSequence('${lead.id}')">${lead.sequence?.active ? '⏹ Parar Sequência' : '▶️ Iniciar Sequência'}</button>
+    </div>
+    <div class="form-group">
+      <label>Adicionar Nota:</label>
+      <div style="display:flex; gap:8px;">
+        <input type="text" id="detailNote" placeholder="Escreva uma nota..." style="flex:1; background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:8px; color:var(--text);">
+        <button class="btn btn-primary btn-sm" onclick="addLeadNote('${lead.id}')">Salvar</button>
+      </div>
+    </div>
+    <div>
+      <label style="font-size:13px; color:var(--text2); margin-bottom:8px; display:block;">Histórico:</label>
+      <div style="max-height:200px; overflow-y:auto;">${notesHtml}</div>
+    </div>
+  `;
+
+  modal.querySelector('.modal-footer').innerHTML = `
+    <button class="btn btn-outline" onclick="closeModal('messageModal')">Fechar</button>
+  `;
+
+  modal.classList.remove('hidden');
+}
+
+function changeLeadStage(id, newStage) {
+  const lead = leads.find(l => l.id === id);
+  if (!lead) return;
+  const oldStage = lead.stage;
+  lead.stage = newStage;
+  lead.stageChangedAt = new Date().toISOString();
+  lead.notes = lead.notes || [];
+  lead.notes.push({ text: `Movido de ${oldStage} para ${newStage}`, date: new Date().toISOString(), type: 'stage_change' });
+  saveLeads();
+  if (currentView === 'kanban') renderKanbanCards();
+  showToast('Estágio atualizado!');
+}
+
+function updateDealValue(id, value) {
+  const lead = leads.find(l => l.id === id);
+  if (!lead) return;
+  lead.dealValue = parseFloat(value) || 0;
+  saveLeads();
+}
+
+function addLeadNote(id) {
+  const lead = leads.find(l => l.id === id);
+  const input = document.getElementById('detailNote');
+  if (!lead || !input.value.trim()) return;
+  lead.notes = lead.notes || [];
+  lead.notes.push({ text: input.value.trim(), date: new Date().toISOString(), type: 'note' });
+  saveLeads();
+  openLeadDetail(id);
+  showToast('Nota adicionada!');
+}
+
+function toggleSequence(id) {
+  const lead = leads.find(l => l.id === id);
+  if (!lead) return;
+  if (lead.sequence?.active) {
+    lead.sequence.active = false;
+    showToast('Sequência parada', 'var(--yellow)');
+  } else {
+    lead.sequence = {
+      active: true,
+      currentStep: 0,
+      startedAt: new Date().toISOString(),
+      nextActionAt: new Date().toISOString(),
+      history: []
+    };
+    showToast('Sequência iniciada!', 'var(--green)');
+  }
+  saveLeads();
+  openLeadDetail(id);
+}
+
+// ===== CRM: SEQUENCE ENGINE =====
+const DEFAULT_SEQUENCE = {
+  steps: [
+    { delay: 0, template: 'tpl1', label: 'Primeiro contato', channel: 'auto' },
+    { delay: 3, template: 'tpl2', label: 'Follow-up 3 dias', channel: 'auto' },
+    { delay: 7, template: 'tpl3', label: 'Follow-up 7 dias', channel: 'auto' },
+    { delay: 14, template: 'tpl4', label: 'Último contato', channel: 'auto' }
+  ]
+};
+
+function getSequenceConfig() {
+  const saved = localStorage.getItem('crm_sequences_config');
+  return saved ? JSON.parse(saved) : { ...DEFAULT_SEQUENCE };
+}
+
+function checkPendingSequences() {
+  const now = new Date();
+  const pending = leads.filter(l => {
+    if (!l.sequence?.active) return false;
+    if (!l.sequence.nextActionAt) return false;
+    return new Date(l.sequence.nextActionAt) <= now;
+  });
+
+  const badge = document.getElementById('seqBadge');
+  if (badge) {
+    if (pending.length > 0) {
+      badge.textContent = pending.length;
+      badge.classList.remove('hidden');
+    } else {
+      badge.classList.add('hidden');
+    }
+  }
+
+  if (pending.length > 0) {
+    showSequenceBanner(pending.length);
+  }
+
+  return pending;
+}
+
+function showSequenceBanner(count) {
+  const existing = document.getElementById('seqBanner');
+  if (existing) existing.remove();
+
+  const banner = document.createElement('div');
+  banner.id = 'seqBanner';
+  banner.style.cssText = 'background:var(--blue-bg); border:1px solid var(--blue); border-radius:10px; margin:12px 24px; padding:12px 16px; display:flex; align-items:center; justify-content:space-between; cursor:pointer;';
+  banner.innerHTML = `
+    <span style="color:var(--blue); font-weight:600;">🔔 ${count} mensagen${count > 1 ? 's' : ''} pendente${count > 1 ? 's' : ''} para enviar hoje</span>
+    <button class="btn btn-primary btn-sm" onclick="switchView('sequencias')">Ver Sequências</button>
+  `;
+
+  const mainApp = document.getElementById('mainApp');
+  const navTabs = document.getElementById('navTabs');
+  if (navTabs && navTabs.nextSibling) {
+    mainApp.insertBefore(banner, navTabs.nextSibling);
+  }
+}
+
+function renderSequencias() {
+  const container = document.getElementById('viewSequencias');
+  const config = getSequenceConfig();
+  const pending = checkPendingSequences();
+
+  const activeSeqs = leads.filter(l => l.sequence?.active);
+  const byStep = config.steps.map((step, i) => ({
+    ...step,
+    count: activeSeqs.filter(l => l.sequence.currentStep === i).length
+  }));
+
+  let html = '<div style="padding:24px;">';
+
+  html += '<div style="display:flex; gap:16px; margin-bottom:24px; flex-wrap:wrap;">';
+  html += `<div class="stat-card"><div class="label">Sequências Ativas</div><div class="value" style="color:var(--blue);">${activeSeqs.length}</div></div>`;
+  html += `<div class="stat-card"><div class="label">Pendentes Hoje</div><div class="value" style="color:var(--yellow);">${pending.length}</div></div>`;
+  html += `<div class="stat-card"><div class="label">Concluídas</div><div class="value" style="color:var(--green);">${leads.filter(l => l.sequence && !l.sequence.active && l.sequence.history?.length > 0).length}</div></div>`;
+  html += '</div>';
+
+  html += '<h3 style="margin-bottom:16px;">Pipeline de Sequência</h3>';
+  html += '<div style="display:flex; gap:12px; margin-bottom:24px; flex-wrap:wrap;">';
+  byStep.forEach((step, i) => {
+    html += `<div style="background:var(--bg2); border:1px solid var(--border); border-radius:10px; padding:16px; flex:1; min-width:180px; text-align:center;">
+      <div style="font-size:24px; font-weight:700; color:var(--blue);">${step.count}</div>
+      <div style="font-size:13px; color:var(--text2);">Passo ${i+1}: ${esc(step.label)}</div>
+      <div style="font-size:11px; color:var(--text2); margin-top:4px;">Delay: ${step.delay}d</div>
+    </div>`;
+  });
+  html += '</div>';
+
+  if (pending.length > 0) {
+    html += '<h3 style="margin-bottom:12px;">📬 Mensagens Pendentes Hoje</h3>';
+    html += '<div style="background:var(--bg2); border:1px solid var(--border); border-radius:10px; overflow:hidden;">';
+    pending.forEach(lead => {
+      const step = config.steps[lead.sequence.currentStep] || config.steps[0];
+      html += `<div style="padding:12px 16px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <strong>${esc(lead.empresa)}</strong>
+          <small style="color:var(--text2); margin-left:8px;">Passo ${lead.sequence.currentStep + 1}: ${esc(step.label)}</small>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <button class="btn btn-sm btn-primary" onclick="processSequenceStep('${lead.id}')">📤 Enviar</button>
+          <button class="btn btn-sm btn-outline" onclick="skipSequenceStep('${lead.id}')">⏭ Pular</button>
+        </div>
+      </div>`;
+    });
+    html += '</div>';
+  }
+
+  html += '<div style="margin-top:24px; display:flex; gap:12px;">';
+  html += '<button class="btn btn-primary" onclick="bulkStartSequence()">▶️ Iniciar Sequência (leads sem follow-up)</button>';
+  html += '<button class="btn btn-outline" onclick="bulkStopSequence()">⏹ Parar Todas</button>';
+  html += '</div>';
+
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+function processSequenceStep(id) {
+  const lead = leads.find(l => l.id === id);
+  if (!lead || !lead.sequence?.active) return;
+
+  const config = getSequenceConfig();
+  const step = config.steps[lead.sequence.currentStep];
+  if (!step) return;
+
+  const templates = getTemplates();
+  const msg = applyTemplate(templates[step.template] || templates.tpl1, lead);
+
+  navigator.clipboard.writeText(msg);
+
+  if (lead.phone && (step.channel === 'wpp' || step.channel === 'auto')) {
+    window.open(`https://wa.me/${lead.phone}?text=${encodeURIComponent(msg)}`, '_blank');
+  } else if (lead.instagram) {
+    window.open(lead.instagram, '_blank');
+  }
+
+  lead.sequence.history.push({
+    step: lead.sequence.currentStep,
+    sentAt: new Date().toISOString(),
+    template: step.template,
+    channel: lead.phone ? 'wpp' : 'ig'
+  });
+
+  lead.sequence.currentStep++;
+
+  if (lead.sequence.currentStep === 1) { lead.followup1 = 'sim'; lead.followup1_date = new Date().toLocaleDateString('pt-BR'); }
+  if (lead.sequence.currentStep === 2) { lead.followup2 = 'sim'; lead.followup2_date = new Date().toLocaleDateString('pt-BR'); }
+
+  if (lead.sequence.currentStep >= config.steps.length) {
+    lead.sequence.active = false;
+    showToast('Sequência concluída para ' + lead.empresa, 'var(--green)');
+  } else {
+    const nextStep = config.steps[lead.sequence.currentStep];
+    const nextDate = new Date();
+    nextDate.setDate(nextDate.getDate() + nextStep.delay);
+    lead.sequence.nextActionAt = nextDate.toISOString();
+    showToast('Próxima msg em ' + nextStep.delay + ' dias', 'var(--blue)');
+  }
+
+  if (lead.stage === 'novo') {
+    lead.stage = 'contatado';
+    lead.stageChangedAt = new Date().toISOString();
+  }
+
+  saveLeads();
+  saveFollowupState(lead);
+  renderSequencias();
+  checkPendingSequences();
+}
+
+function skipSequenceStep(id) {
+  const lead = leads.find(l => l.id === id);
+  if (!lead || !lead.sequence?.active) return;
+
+  const config = getSequenceConfig();
+  lead.sequence.currentStep++;
+
+  if (lead.sequence.currentStep >= config.steps.length) {
+    lead.sequence.active = false;
+  } else {
+    const nextStep = config.steps[lead.sequence.currentStep];
+    const nextDate = new Date();
+    nextDate.setDate(nextDate.getDate() + nextStep.delay);
+    lead.sequence.nextActionAt = nextDate.toISOString();
+  }
+
+  saveLeads();
+  renderSequencias();
+  checkPendingSequences();
+  showToast('Passo pulado', 'var(--yellow)');
+}
+
+function bulkStartSequence() {
+  const noFollowup = leads.filter(l => l.stage === 'novo' && !l.sequence?.active && (l.instagram || l.phone));
+  if (noFollowup.length === 0) {
+    showToast('Nenhum lead novo sem sequência', 'var(--yellow)');
+    return;
+  }
+
+  noFollowup.forEach(lead => {
+    lead.sequence = {
+      active: true,
+      currentStep: 0,
+      startedAt: new Date().toISOString(),
+      nextActionAt: new Date().toISOString(),
+      history: []
+    };
+  });
+
+  saveLeads();
+  renderSequencias();
+  checkPendingSequences();
+  showToast(`Sequência iniciada para ${noFollowup.length} leads!`, 'var(--green)');
+}
+
+function bulkStopSequence() {
+  const active = leads.filter(l => l.sequence?.active);
+  active.forEach(l => { l.sequence.active = false; });
+  saveLeads();
+  renderSequencias();
+  checkPendingSequences();
+  showToast(`${active.length} sequências paradas`, 'var(--yellow)');
+}
+
+// ===== CRM: DASHBOARD =====
+function renderDashboard() {
+  const container = document.getElementById('viewDashboard');
+
+  const total = leads.length;
+  const fechados = leads.filter(l => l.stage === 'fechado').length;
+  const perdidos = leads.filter(l => l.stage === 'perdido').length;
+  const taxaConversao = total > 0 ? ((fechados / total) * 100).toFixed(1) : 0;
+
+  const now = new Date();
+  const weekAgo = new Date(now - 7 * 86400000);
+  const leadsThisWeek = leads.filter(l => l.createdAt && new Date(l.createdAt) >= weekAgo).length;
+
+  const activeLeads = leads.filter(l => !['fechado', 'perdido'].includes(l.stage));
+  const pipelineValue = activeLeads.reduce((sum, l) => sum + (l.dealValue || 0), 0);
+
+  const pendingSeqs = leads.filter(l => l.sequence?.active && l.sequence.nextActionAt && new Date(l.sequence.nextActionAt) <= now).length;
+
+  let html = '<div style="padding:24px;">';
+
+  html += '<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:16px; margin-bottom:32px;">';
+  html += metricCard('Total Leads', total, 'var(--blue)');
+  html += metricCard('Taxa Conversão', taxaConversao + '%', 'var(--green)');
+  html += metricCard('Leads/Semana', leadsThisWeek, 'var(--yellow)');
+  html += metricCard('Pipeline', 'R$ ' + pipelineValue.toLocaleString('pt-BR'), 'var(--purple)');
+  html += metricCard('Fechados', fechados, 'var(--green)');
+  html += metricCard('Pendentes Hoje', pendingSeqs, 'var(--red)');
+  html += '</div>';
+
+  html += '<div style="display:grid; grid-template-columns:1fr 1fr; gap:24px; margin-bottom:32px;">';
+
+  // Funnel
+  html += '<div style="background:var(--bg2); border:1px solid var(--border); border-radius:12px; padding:20px;">';
+  html += '<h3 style="margin-bottom:16px; font-size:16px;">Funil de Vendas</h3>';
+  STAGES.forEach(stage => {
+    const count = leads.filter(l => l.stage === stage.id).length;
+    const pct = total > 0 ? (count / total * 100) : 0;
+    html += `<div style="margin-bottom:12px;">
+      <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+        <span style="font-size:13px;">${stage.icon} ${stage.label}</span>
+        <span style="font-size:13px; color:var(--text2);">${count} (${pct.toFixed(1)}%)</span>
+      </div>
+      <div style="background:var(--bg3); border-radius:4px; height:24px; overflow:hidden;">
+        <div style="background:${stage.color}; height:100%; width:${pct}%; border-radius:4px; transition:width 0.5s;"></div>
+      </div>
+    </div>`;
+  });
+  html += '</div>';
+
+  // Leads by nicho
+  html += '<div style="background:var(--bg2); border:1px solid var(--border); border-radius:12px; padding:20px;">';
+  html += '<h3 style="margin-bottom:16px; font-size:16px;">Leads por Nicho</h3>';
+  const nichos = {};
+  leads.forEach(l => { nichos[l.nicho] = (nichos[l.nicho] || 0) + 1; });
+  const sortedNichos = Object.entries(nichos).sort((a, b) => b[1] - a[1]).slice(0, 8);
+  const maxNicho = sortedNichos[0]?.[1] || 1;
+  const nichoColors = ['var(--blue)', 'var(--green)', 'var(--yellow)', 'var(--purple)', '#ec4899', 'var(--red)', '#f97316', '#06b6d4'];
+  sortedNichos.forEach(([nicho, count], i) => {
+    const pct = (count / maxNicho) * 100;
+    html += `<div style="margin-bottom:10px;">
+      <div style="display:flex; justify-content:space-between; margin-bottom:2px;">
+        <span style="font-size:12px;">${esc(nicho)}</span>
+        <span style="font-size:12px; color:var(--text2);">${count}</span>
+      </div>
+      <div style="background:var(--bg3); border-radius:4px; height:16px; overflow:hidden;">
+        <div style="background:${nichoColors[i % nichoColors.length]}; height:100%; width:${pct}%; border-radius:4px;"></div>
+      </div>
+    </div>`;
+  });
+  html += '</div>';
+
+  html += '</div>';
+
+  // Activity timeline
+  html += '<div style="background:var(--bg2); border:1px solid var(--border); border-radius:12px; padding:20px;">';
+  html += '<h3 style="margin-bottom:16px; font-size:16px;">Atividade Recente</h3>';
+
+  const allNotes = [];
+  leads.forEach(l => {
+    (l.notes || []).forEach(n => {
+      allNotes.push({ ...n, empresa: l.empresa });
+    });
+  });
+  allNotes.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+
+  const recentNotes = allNotes.slice(0, 15);
+  if (recentNotes.length > 0) {
+    recentNotes.forEach(n => {
+      const icon = n.type === 'stage_change' ? '🔄' : '📝';
+      const date = n.date ? new Date(n.date).toLocaleDateString('pt-BR') : '';
+      html += `<div style="padding:8px 0; border-bottom:1px solid var(--border); font-size:13px;">
+        ${icon} <strong>${esc(n.empresa)}</strong> - ${esc(n.text)} <small style="color:var(--text2);">${date}</small>
+      </div>`;
+    });
+  } else {
+    html += '<p style="color:var(--text2); font-size:13px;">Nenhuma atividade registrada.</p>';
+  }
+  html += '</div>';
+
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+function metricCard(label, value, color) {
+  return `<div class="stat-card">
+    <div class="label">${label}</div>
+    <div class="value" style="color:${color};">${value}</div>
+  </div>`;
+}
+
+// ===== CRM: CONFIG VIEW =====
+function renderConfig() {
+  const container = document.getElementById('viewConfig');
+  const config = getSequenceConfig();
+
+  let html = '<div style="padding:24px; max-width:700px;">';
+  html += '<h2 style="margin-bottom:24px;">⚙️ Configurações do CRM</h2>';
+
+  html += '<div style="background:var(--bg2); border:1px solid var(--border); border-radius:12px; padding:20px; margin-bottom:24px;">';
+  html += '<h3 style="margin-bottom:16px;">Sequência de Mensagens</h3>';
+  config.steps.forEach((step, i) => {
+    html += `<div style="display:flex; gap:12px; align-items:center; margin-bottom:12px; padding:12px; background:var(--bg); border-radius:8px;">
+      <span style="font-weight:700; color:var(--blue);">${i+1}</span>
+      <input type="text" value="${esc(step.label)}" style="flex:1; background:var(--bg2); border:1px solid var(--border); border-radius:6px; padding:6px 10px; color:var(--text); font-size:13px;" data-seq-label="${i}">
+      <label style="font-size:12px; color:var(--text2);">Delay:</label>
+      <input type="number" value="${step.delay}" style="width:60px; background:var(--bg2); border:1px solid var(--border); border-radius:6px; padding:6px 10px; color:var(--text); font-size:13px;" data-seq-delay="${i}">
+      <span style="font-size:12px; color:var(--text2);">dias</span>
+    </div>`;
+  });
+  html += '<button class="btn btn-primary btn-sm" onclick="saveSequenceConfig()">Salvar Configuração</button>';
+  html += '</div>';
+
+  html += '<div style="background:var(--bg2); border:1px solid var(--border); border-radius:12px; padding:20px; margin-bottom:24px;">';
+  html += '<h3 style="margin-bottom:16px;">Webhook Facebook</h3>';
+  const webhookUrl = localStorage.getItem('crm_webhook_url') || '';
+  const webhookToken = localStorage.getItem('crm_webhook_token') || '';
+  html += `<div class="form-group">
+    <label>URL do Webhook (Vercel):</label>
+    <input type="text" id="cfgWebhookUrl" value="${esc(webhookUrl)}" placeholder="https://seu-app.vercel.app" style="width:100%; background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:8px; color:var(--text);">
+  </div>
+  <div class="form-group">
+    <label>Token Secreto:</label>
+    <input type="password" id="cfgWebhookToken" value="${esc(webhookToken)}" placeholder="seu-token-secreto" style="width:100%; background:var(--bg); border:1px solid var(--border); border-radius:8px; padding:8px; color:var(--text);">
+  </div>`;
+  html += '<div style="display:flex; gap:8px;"><button class="btn btn-primary btn-sm" onclick="saveWebhookConfig()">Salvar</button>';
+  html += '<button class="btn btn-outline btn-sm" onclick="testWebhook()">Testar Conexão</button>';
+  html += '<button class="btn btn-outline btn-sm" onclick="fetchWebhookLeads()">Buscar Leads Agora</button></div>';
+  html += '</div>';
+
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+function saveSequenceConfig() {
+  const config = getSequenceConfig();
+  config.steps.forEach((step, i) => {
+    const labelInput = document.querySelector(`[data-seq-label="${i}"]`);
+    const delayInput = document.querySelector(`[data-seq-delay="${i}"]`);
+    if (labelInput) step.label = labelInput.value;
+    if (delayInput) step.delay = parseInt(delayInput.value) || 0;
+  });
+  localStorage.setItem('crm_sequences_config', JSON.stringify(config));
+  showToast('Configuração salva!');
+}
+
+function saveWebhookConfig() {
+  localStorage.setItem('crm_webhook_url', document.getElementById('cfgWebhookUrl').value);
+  localStorage.setItem('crm_webhook_token', document.getElementById('cfgWebhookToken').value);
+  showToast('Webhook configurado!');
+}
+
+function testWebhook() {
+  const url = localStorage.getItem('crm_webhook_url');
+  if (!url) { showToast('Configure a URL primeiro', 'var(--red)'); return; }
+  fetch(url + '/api/health').then(r => r.json()).then(d => {
+    showToast('Conexão OK! ✅', 'var(--green)');
+  }).catch(e => {
+    showToast('Falha na conexão ❌', 'var(--red)');
+  });
+}
+
+function fetchWebhookLeads() {
+  const url = localStorage.getItem('crm_webhook_url');
+  const token = localStorage.getItem('crm_webhook_token');
+  if (!url || !token) { showToast('Configure o webhook primeiro', 'var(--red)'); return; }
+
+  const lastFetch = localStorage.getItem('crm_last_webhook_fetch') || '2000-01-01T00:00:00Z';
+
+  fetch(`${url}/api/leads?since=${lastFetch}&token=${token}`)
+    .then(r => r.json())
+    .then(data => {
+      if (!data.leads || data.leads.length === 0) {
+        showToast('Nenhum lead novo', 'var(--yellow)');
+        return;
+      }
+
+      let imported = 0;
+      data.leads.forEach(fb => {
+        const id = 'fb_' + (fb.id || Date.now() + '_' + Math.random().toString(36).substr(2));
+        if (leads.find(l => l.id === id)) return;
+
+        leads.push({
+          id,
+          data: new Date().toLocaleDateString('pt-BR'),
+          empresa: fb.name || fb.full_name || 'Lead Facebook',
+          contato: fb.name || '',
+          info_contato: fb.phone || fb.email || '',
+          phone: (fb.phone || '').replace(/[^0-9+]/g, ''),
+          instagram: '',
+          abordagem: fb.phone ? 'WPP' : 'DM',
+          nicho: 'Facebook Lead',
+          rede: 'Facebook',
+          cidade: fb.city || 'Indefinida',
+          observacoes: 'Importado via Facebook Lead Ads',
+          resultado: '',
+          followup1: '', followup2: '', followup3: '',
+          pagina: 'Facebook',
+          followup1_date: '', followup2_date: '', followup3_date: '',
+          stage: 'novo',
+          stageChangedAt: new Date().toISOString(),
+          sequence: { active: true, currentStep: 0, startedAt: new Date().toISOString(), nextActionAt: new Date().toISOString(), history: [] },
+          notes: [{ text: 'Lead recebido via Facebook Lead Ads', date: new Date().toISOString(), type: 'note' }],
+          dealValue: 0,
+          lostReason: '',
+          source: 'facebook',
+          createdAt: new Date().toISOString()
+        });
+        imported++;
+      });
+
+      if (imported > 0) {
+        saveLeads();
+        localStorage.setItem('crm_last_webhook_fetch', new Date().toISOString());
+        showToast(`${imported} leads do Facebook importados!`, 'var(--green)');
+        if (currentView === 'kanban') renderKanbanCards();
+        if (currentView === 'dashboard') renderDashboard();
+        checkPendingSequences();
+      }
+    })
+    .catch(e => {
+      showToast('Erro ao buscar leads: ' + e.message, 'var(--red)');
+    });
+}
+
+// ===== START =====
+init();
+</script>
+</body>
+</html>
